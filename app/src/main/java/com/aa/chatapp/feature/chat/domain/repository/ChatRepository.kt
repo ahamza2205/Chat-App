@@ -1,0 +1,23 @@
+package com.aa.chatapp.feature.chat.domain.repository
+
+import com.aa.chatapp.feature.chat.domain.model.Message
+import com.aa.chatapp.feature.chat.domain.model.MessageStatus
+import kotlinx.coroutines.flow.Flow
+
+interface ChatRepository {
+
+    fun observeMessages(): Flow<List<Message>>
+
+    suspend fun insertPendingMessage(message: Message)
+
+    suspend fun updateMessageStatus(
+        messageId: String,
+        status: MessageStatus,
+        failedReason: String? = null,
+    )
+
+    /** Resets a FAILED message to SENDING and clears failedReason. */
+    suspend fun retryMessage(messageId: String)
+
+    suspend fun getMessageById(messageId: String): Message?
+}
