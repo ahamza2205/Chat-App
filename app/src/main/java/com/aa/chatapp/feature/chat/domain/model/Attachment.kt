@@ -1,5 +1,8 @@
 package com.aa.chatapp.feature.chat.domain.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Attachment(
     val id: String,
     /** Non-null while the file is only on-device; null after a successful upload. */

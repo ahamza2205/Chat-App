@@ -1,0 +1,27 @@
+package com.aa.chatapp.feature.chat.data.local.dao
+
+import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import com.aa.chatapp.feature.chat.data.local.entity.MessageEntity
+import kotlinx.coroutines.flow.Flow
+
+@Dao
+interface MessageDao {
+
+    @Query("SELECT * FROM messages ORDER BY createdAt ASC")
+    fun observeMessages(): Flow<List<MessageEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertOrReplace(message: MessageEntity)
+
+    @Query("UPDATE messages SET status = :status, failedReason = :failedReason WHERE id = :messageId")
+    suspend fun updateMessageStatus(messageId: String, status: String, failedReason: String?)
+
+    @Query("UPDATE messages SET status = :status, failedReason = NULL WHERE id = :messageId")
+    suspend fun resetMessageStatus(messageId: String, status: String)
+
+    @Query("SELECT * FROM messages WHERE id = :messageId LIMIT 1")
+    suspend fun getMessageById(messageId: String): MessageEntity?
+}
