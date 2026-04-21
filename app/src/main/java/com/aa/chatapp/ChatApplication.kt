@@ -1,15 +1,18 @@
 package com.aa.chatapp
 
 import android.app.Application
+import androidx.hilt.work.HiltWorkerFactory
+import androidx.work.Configuration
 import dagger.hilt.android.HiltAndroidApp
+import javax.inject.Inject
 
-/**
- * Application entry point.
- *
- * @HiltAndroidApp triggers Hilt's code generation and sets up the
- * application-level dependency container.
- *
- * TODO (Phase 3): launch RealtimeMessageSource coroutine here.
- */
 @HiltAndroidApp
-class ChatApplication : Application()
+class ChatApplication : Application(), Configuration.Provider {
+
+    @Inject lateinit var workerFactory: HiltWorkerFactory
+
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
+            .setWorkerFactory(workerFactory)
+            .build()
+}

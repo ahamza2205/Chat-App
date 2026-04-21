@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
+import androidx.work.WorkManager
 import com.aa.chatapp.feature.chat.data.repository.ChatRepositoryImpl
 import com.aa.chatapp.feature.chat.domain.repository.ChatRepository
 import dagger.Binds
@@ -30,5 +31,10 @@ abstract class AppModule {
         @Singleton
         fun provideDataStore(@ApplicationContext context: Context): DataStore<Preferences> =
             context.dataStore
+
+        @Provides
+        @Singleton
+        fun provideWorkManager(@ApplicationContext context: Context): WorkManager =
+            WorkManager.getInstance(context)
     }
 }
