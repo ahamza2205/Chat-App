@@ -108,6 +108,10 @@ dependencies {
     implementation(libs.supabase.storage)
     implementation(libs.ktor.client.okhttp)
 
+    // ── Coil (avatar images) ────────────────────────────────────────
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
+
     // ── Debug / Test ───────────────────────────────────────────────
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)

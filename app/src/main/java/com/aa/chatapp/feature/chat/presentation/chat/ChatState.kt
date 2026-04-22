@@ -8,4 +8,6 @@ data class ChatState(
     val inputText: String = "",
     val selectedAttachments: List<Attachment> = emptyList(),
     val currentUserId: String = "",
+    val currentUserName: String = "",
+    val currentAvatarUrl: String? = null,
 )

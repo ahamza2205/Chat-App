@@ -23,6 +23,14 @@ class UserPreferencesDataSource @Inject constructor(
         }
     }
 
+    suspend fun saveUserName(name: String) {
+        dataStore.edit { it[KEY_USER_NAME] = name }
+    }
+
+    suspend fun saveAvatarUrl(url: String) {
+        dataStore.edit { it[KEY_AVATAR_URL] = url }
+    }
+
     companion object {
         private val KEY_USER_ID = stringPreferencesKey("user_id")
         private val KEY_USER_NAME = stringPreferencesKey("user_name")

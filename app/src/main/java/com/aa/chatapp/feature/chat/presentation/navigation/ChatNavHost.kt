@@ -7,8 +7,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.aa.chatapp.feature.chat.presentation.chat.ChatScreen
+import com.aa.chatapp.feature.chat.presentation.profile.ProfileScreen
 
 private const val ROUTE_CHAT = "chat"
+private const val ROUTE_PROFILE = "profile"
 
 @Composable
 fun ChatNavHost() {
@@ -19,7 +21,10 @@ fun ChatNavHost() {
         modifier = Modifier.fillMaxSize(),
     ) {
         composable(route = ROUTE_CHAT) {
-            ChatScreen()
+            ChatScreen(onNavigateToProfile = { navController.navigate(ROUTE_PROFILE) })
+        }
+        composable(route = ROUTE_PROFILE) {
+            ProfileScreen(onBack = { navController.popBackStack() })
         }
     }
 }

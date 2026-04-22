@@ -61,6 +61,16 @@ class ChatViewModel @Inject constructor(
                 _state.update { it.copy(currentUserId = id.orEmpty()) }
             }
         }
+        viewModelScope.launch {
+            userPrefs.userName.collect { name ->
+                _state.update { it.copy(currentUserName = name.orEmpty()) }
+            }
+        }
+        viewModelScope.launch {
+            userPrefs.avatarUrl.collect { url ->
+                _state.update { it.copy(currentAvatarUrl = url) }
+            }
+        }
     }
 
     fun onIntent(intent: ChatIntent) {
