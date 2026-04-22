@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -15,12 +17,17 @@ android {
 
     defaultConfig {
         applicationId = "com.aa.chatapp"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        val localProps = Properties()
+        rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(localProps::load)
+        buildConfigField("String", "SUPABASE_URL",      "\"${localProps["SUPABASE_URL"]      ?: ""}\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"${localProps["SUPABASE_ANON_KEY"] ?: ""}\"")
     }
 
     buildTypes {
@@ -93,6 +100,13 @@ dependencies {
 
     // ── DataStore (device identity) ────────────────────────────────
     implementation(libs.androidx.datastore.preferences)
+
+    // ── Supabase ────────────────────────────────────────────────────
+    implementation(platform(libs.supabase.bom))
+    implementation(libs.supabase.postgrest)
+    implementation(libs.supabase.realtime)
+    implementation(libs.supabase.storage)
+    implementation(libs.ktor.client.okhttp)
 
     // ── Debug / Test ───────────────────────────────────────────────
     debugImplementation(libs.androidx.compose.ui.tooling)
