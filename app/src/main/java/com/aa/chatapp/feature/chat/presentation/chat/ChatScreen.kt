@@ -131,10 +131,14 @@ fun ChatScreen(
             },
             snackbarHost = { SnackbarHost(snackbarHostState) },
             bottomBar = {
+                val deletedMessageIds = remember(state.messages) {
+                    state.messages.filter { it.isDeletedForEveryone }.map { it.id }.toSet()
+                }
                 MessageInputBar(
                     text = state.inputText,
                     attachments = state.selectedAttachments,
                     replyingTo = state.replyingTo,
+                    replyingToDeleted = state.replyingTo?.originalMessageId in deletedMessageIds,
                     onClearReply = { viewModel.onIntent(ChatIntent.OnClearReply) },
                     onTextChange = { viewModel.onIntent(ChatIntent.OnInputChanged(it)) },
                     onSend = { viewModel.onIntent(ChatIntent.OnSendClicked) },
@@ -172,6 +176,10 @@ fun ChatScreen(
                     )
                 }
             } else {
+                val deletedMessageIds = remember(state.messages) {
+                    state.messages.filter { it.isDeletedForEveryone }.map { it.id }.toSet()
+                }
+                
                 LazyColumn(
                     state = listState,
                     contentPadding = innerPadding,
@@ -183,11 +191,13 @@ fun ChatScreen(
                         val nextSender = state.messages.getOrNull(index + 1)?.senderId
                         val isFirstInGroup = prevSender != message.senderId
                         val isLastInGroup  = nextSender != message.senderId
+
                         MessageBubble(
                             message = message,
                             isOwn = isOwn,
                             showName   = !isOwn && isFirstInGroup,
                             showAvatar = !isOwn && isLastInGroup,
+                            isReplyDeleted = message.replyPreview?.originalMessageId in deletedMessageIds,
                             onRetry = { viewModel.onIntent(ChatIntent.OnRetryMessage(message.id)) },
                             onReply = {
                                 val hasAudio = message.attachments.any { it.mimeType.startsWith("audio/") }

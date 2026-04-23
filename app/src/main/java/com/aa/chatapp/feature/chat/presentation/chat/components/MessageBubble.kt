@@ -69,6 +69,7 @@ fun MessageBubble(
     isOwn: Boolean,
     showAvatar: Boolean,
     showName: Boolean,
+    isReplyDeleted: Boolean = false,
     onRetry: () -> Unit,
     onReply: () -> Unit,
     onDeleteForMe: () -> Unit,
@@ -186,7 +187,7 @@ fun MessageBubble(
                     val imageAttachments = message.attachments.filter { !it.mimeType.startsWith("audio/") }
 
                     message.replyPreview?.let { reply ->
-                        ReplyBlock(reply = reply, isOwn = isOwn)
+                        ReplyBlock(reply = reply, isOwn = isOwn, isDeleted = isReplyDeleted)
                     }
 
                     audioAttachments.forEach { audio ->
@@ -267,6 +268,7 @@ fun MessageBubble(
 private fun ReplyBlock(
     reply: ReplyPreview,
     isOwn: Boolean,
+    isDeleted: Boolean,
 ) {
     val accentColor = MaterialTheme.colorScheme.primary
     val bgColor = if (isOwn)
@@ -295,6 +297,7 @@ private fun ReplyBlock(
                 color = accentColor,
             )
             val preview = when {
+                isDeleted -> "🚫 This message was deleted"
                 reply.isMedia -> "📷 Photo"
                 reply.textPreview != null -> reply.textPreview
                 else -> ""

@@ -76,6 +76,7 @@ fun MessageInputBar(
     text: String,
     attachments: List<Attachment>,
     replyingTo: ReplyPreview?,
+    replyingToDeleted: Boolean = false,
     onClearReply: () -> Unit,
     onTextChange: (String) -> Unit,
     onSend: () -> Unit,
@@ -121,7 +122,7 @@ fun MessageInputBar(
     ) {
         Column(modifier = Modifier.navigationBarsPadding()) {
             replyingTo?.let {
-                ReplyPreviewBar(reply = it, onDismiss = onClearReply)
+                ReplyPreviewBar(reply = it, isDeleted = replyingToDeleted, onDismiss = onClearReply)
             }
             if (attachments.isNotEmpty() && !isRecording) {
                 AttachmentPreviewStrip(attachments = attachments, onRemove = onRemoveAttachment)
@@ -430,7 +431,7 @@ private fun AttachmentPreviewStrip(
 }
 
 @Composable
-private fun ReplyPreviewBar(reply: ReplyPreview, onDismiss: () -> Unit) {
+private fun ReplyPreviewBar(reply: ReplyPreview, isDeleted: Boolean, onDismiss: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
@@ -448,6 +449,7 @@ private fun ReplyPreviewBar(reply: ReplyPreview, onDismiss: () -> Unit) {
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.primary)
             val preview = when {
+                isDeleted -> "🚫 This message was deleted"
                 reply.isMedia -> "📷 Photo"
                 reply.textPreview != null -> reply.textPreview
                 else -> ""
