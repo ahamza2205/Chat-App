@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.google.services)
 }
 
 android {
@@ -111,6 +112,10 @@ dependencies {
     // ── Coil (avatar images) ────────────────────────────────────────
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
+
+    // ── Firebase Cloud Messaging ─────────────────────────────────────
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
 
     // ── Debug / Test ───────────────────────────────────────────────
     debugImplementation(libs.androidx.compose.ui.tooling)

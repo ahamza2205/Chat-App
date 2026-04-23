@@ -14,6 +14,7 @@ class UserPreferencesDataSource @Inject constructor(
     val userId: Flow<String?> = dataStore.data.map { it[KEY_USER_ID] }
     val userName: Flow<String?> = dataStore.data.map { it[KEY_USER_NAME] }
     val avatarUrl: Flow<String?> = dataStore.data.map { it[KEY_AVATAR_URL] }
+    val fcmToken: Flow<String?> = dataStore.data.map { it[KEY_FCM_TOKEN] }
 
     suspend fun saveUserIdentity(id: String, name: String, avatarUrl: String? = null) {
         dataStore.edit { prefs ->
@@ -31,9 +32,14 @@ class UserPreferencesDataSource @Inject constructor(
         dataStore.edit { it[KEY_AVATAR_URL] = url }
     }
 
+    suspend fun saveFcmToken(token: String) {
+        dataStore.edit { it[KEY_FCM_TOKEN] = token }
+    }
+
     companion object {
         private val KEY_USER_ID = stringPreferencesKey("user_id")
         private val KEY_USER_NAME = stringPreferencesKey("user_name")
         private val KEY_AVATAR_URL = stringPreferencesKey("avatar_url")
+        private val KEY_FCM_TOKEN = stringPreferencesKey("fcm_token")
     }
 }

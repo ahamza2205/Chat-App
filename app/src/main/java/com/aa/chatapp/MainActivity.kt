@@ -1,28 +1,42 @@
 package com.aa.chatapp
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import com.aa.chatapp.feature.chat.presentation.navigation.ChatNavHost
 import com.aa.chatapp.ui.theme.ChatAppTheme
 import dagger.hilt.android.AndroidEntryPoint
 
-/**
- * Single Activity — owns the Compose content tree.
- *
- * @AndroidEntryPoint makes this activity a Hilt injection target.
- * No business logic lives here; routing is delegated to [ChatNavHost].
- */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
+    private val notificationPermLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { /* granted or denied — no action needed */ }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        askNotificationPermission()
         enableEdgeToEdge()
         setContent {
             ChatAppTheme {
                 ChatNavHost()
+            }
+        }
+    }
+
+    private fun askNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                notificationPermLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
     }
