@@ -11,4 +11,5 @@ data class Message(
     val status: MessageStatus,
     val createdAt: Long,
     val failedReason: String? = null,
+    val replyPreview: ReplyPreview? = null,
 )

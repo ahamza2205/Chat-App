@@ -2,6 +2,7 @@ package com.aa.chatapp.core.database
 
 import androidx.room.TypeConverter
 import com.aa.chatapp.feature.chat.domain.model.Attachment
+import com.aa.chatapp.feature.chat.domain.model.ReplyPreview
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -13,4 +14,13 @@ class Converters {
 
     @TypeConverter
     fun toAttachments(attachments: List<Attachment>): String = json.encodeToString(attachments)
+
+    @TypeConverter
+    fun fromReplyPreview(value: String?): ReplyPreview? =
+        value?.let { json.decodeFromString(it) }
+
+    @TypeConverter
+    fun toReplyPreview(reply: ReplyPreview?): String? =
+        reply?.let { json.encodeToString(it) }
 }
+

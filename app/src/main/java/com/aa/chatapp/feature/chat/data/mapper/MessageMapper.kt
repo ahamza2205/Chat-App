@@ -14,6 +14,7 @@ fun MessageEntity.toDomain(): Message = Message(
     status = MessageStatus.valueOf(status),
     createdAt = createdAt,
     failedReason = failedReason,
+    replyPreview = replyPreview,
 )
 
 fun Message.toEntity(): MessageEntity = MessageEntity(
@@ -26,4 +27,6 @@ fun Message.toEntity(): MessageEntity = MessageEntity(
     status = status.name,
     createdAt = createdAt,
     failedReason = failedReason,
+    replyPreview = replyPreview,
 )
+

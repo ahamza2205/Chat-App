@@ -43,6 +43,7 @@ import coil3.compose.AsyncImage
 import com.aa.chatapp.feature.chat.domain.model.Attachment
 import com.aa.chatapp.feature.chat.domain.model.Message
 import com.aa.chatapp.feature.chat.domain.model.MessageStatus
+import com.aa.chatapp.feature.chat.domain.model.ReplyPreview
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -60,6 +61,7 @@ fun MessageBubble(
     showAvatar: Boolean,
     showName: Boolean,
     onRetry: () -> Unit,
+    onReply: () -> Unit,
     onImageClick: (attachments: List<Attachment>, startIndex: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -87,6 +89,7 @@ fun MessageBubble(
     val bottomPadding = if (showAvatar || isOwn) 2.dp else 1.dp
     val maxBubbleWidth = LocalConfiguration.current.screenWidthDp.dp * 0.65f
 
+    SwipeToReply(isOwn = isOwn, onReply = onReply) {
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -119,6 +122,9 @@ fun MessageBubble(
                 modifier = Modifier.widthIn(max = maxBubbleWidth),
             ) {
                 Column {
+                    message.replyPreview?.let { reply ->
+                        ReplyBlock(reply = reply, isOwn = isOwn)
+                    }
                     if (message.attachments.isNotEmpty()) {
                         ImageGrid(
                             attachments = message.attachments,
@@ -175,6 +181,55 @@ fun MessageBubble(
                     }
                 }
             }
+        }
+    }
+    } // end SwipeToReply
+}
+
+@Composable
+private fun ReplyBlock(
+    reply: ReplyPreview,
+    isOwn: Boolean,
+) {
+    val accentColor = MaterialTheme.colorScheme.primary
+    val bgColor = if (isOwn)
+        MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.15f)
+    else
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(bgColor)
+            .padding(start = 8.dp, end = 8.dp, top = 6.dp, bottom = 4.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .width(3.dp)
+                .height(36.dp)
+                .background(accentColor, RoundedCornerShape(2.dp)),
+        )
+        Spacer(Modifier.width(8.dp))
+        Column {
+            Text(
+                text = reply.senderName,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = accentColor,
+            )
+            val preview = when {
+                reply.isMedia -> "📷 Photo"
+                reply.textPreview != null -> reply.textPreview
+                else -> ""
+            }
+            Text(
+                text = preview,
+                style = MaterialTheme.typography.bodySmall,
+                color = if (isOwn) MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.75f)
+                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }

@@ -13,4 +13,5 @@ data class RemoteMessage(
     @SerialName("attachments")  val attachments: String = "[]",
     @SerialName("status")       val status: String = "SENT",
     @SerialName("created_at")   val createdAt: Long,
+    @SerialName("reply_preview") val replyPreview: String? = null,
 )

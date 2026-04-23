@@ -18,7 +18,9 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase =
-        Room.databaseBuilder(context, AppDatabase::class.java, "chat.db").build()
+        Room.databaseBuilder(context, AppDatabase::class.java, "chat.db")
+            .fallbackToDestructiveMigration(true)
+            .build()
 
     @Provides
     fun provideMessageDao(db: AppDatabase): MessageDao = db.messageDao()

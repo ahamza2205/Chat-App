@@ -22,10 +22,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.aa.chatapp" />
+                  <option name="mobileSdkAppId" value="1:183559226621:android:d0d888f218718350576a94" />
+                  <option name="projectId" value="chatapp-b0371" />
+                  <option name="projectNumber" value="183559226621" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

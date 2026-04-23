@@ -3,6 +3,7 @@ package com.aa.chatapp.feature.chat.data.remote
 import com.aa.chatapp.feature.chat.data.local.entity.MessageEntity
 import com.aa.chatapp.feature.chat.domain.model.Attachment
 import com.aa.chatapp.feature.chat.domain.model.MessageStatus
+import com.aa.chatapp.feature.chat.domain.model.ReplyPreview
 import kotlinx.serialization.encodeToString
 
 fun MessageEntity.toRemote(): RemoteMessage = RemoteMessage(
@@ -14,6 +15,7 @@ fun MessageEntity.toRemote(): RemoteMessage = RemoteMessage(
     attachments = remoteJson.encodeToString(attachments),
     status = MessageStatus.SENT.name,
     createdAt = createdAt,
+    replyPreview = replyPreview?.let { remoteJson.encodeToString(it) },
 )
 
 fun RemoteMessage.toEntity(): MessageEntity = MessageEntity(
@@ -28,4 +30,8 @@ fun RemoteMessage.toEntity(): MessageEntity = MessageEntity(
     status = status,
     createdAt = createdAt,
     failedReason = null,
+    replyPreview = replyPreview?.let {
+        runCatching { remoteJson.decodeFromString<ReplyPreview>(it) }.getOrNull()
+    },
 )
+

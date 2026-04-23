@@ -2,6 +2,7 @@ package com.aa.chatapp.feature.chat.presentation.chat
 
 import com.aa.chatapp.feature.chat.domain.model.Attachment
 import com.aa.chatapp.feature.chat.domain.model.Message
+import com.aa.chatapp.feature.chat.domain.model.ReplyPreview
 
 data class ChatState(
     val messages: List<Message> = emptyList(),
@@ -10,4 +11,6 @@ data class ChatState(
     val currentUserId: String = "",
     val currentUserName: String = "",
     val currentAvatarUrl: String? = null,
+    val replyingTo: ReplyPreview? = null,
 )
+

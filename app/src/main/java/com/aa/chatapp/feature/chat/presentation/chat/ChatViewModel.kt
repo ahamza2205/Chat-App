@@ -6,6 +6,7 @@ import com.aa.chatapp.core.datastore.UserPreferencesDataSource
 import com.aa.chatapp.feature.chat.domain.model.Attachment
 import com.aa.chatapp.feature.chat.domain.model.Message
 import com.aa.chatapp.feature.chat.domain.model.MessageStatus
+import com.aa.chatapp.feature.chat.domain.model.ReplyPreview
 import com.aa.chatapp.feature.chat.domain.usecase.InsertPendingMessageUseCase
 import com.aa.chatapp.feature.chat.domain.usecase.ObserveMessagesUseCase
 import com.aa.chatapp.feature.chat.domain.usecase.RetryMessageUseCase
@@ -19,7 +20,6 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @HiltViewModel
@@ -31,14 +31,14 @@ class ChatViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ChatState())
-
-    companion object {
-        private const val MAX_ATTACHMENTS = 10
-    }
     val state: StateFlow<ChatState> = _state.asStateFlow()
 
     private val _effects = Channel<ChatEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
+
+    companion object {
+        private const val MAX_ATTACHMENTS = 10
+    }
 
     init {
         viewModelScope.launch {
@@ -78,6 +78,8 @@ class ChatViewModel @Inject constructor(
             }
             ChatIntent.OnSendClicked -> sendMessage()
             is ChatIntent.OnRetryMessage -> retryMessage(intent.messageId)
+            is ChatIntent.OnReplyToMessage -> _state.update { it.copy(replyingTo = intent.reply) }
+            ChatIntent.OnClearReply -> _state.update { it.copy(replyingTo = null) }
         }
     }
 
@@ -112,15 +114,15 @@ class ChatViewModel @Inject constructor(
                 attachments = current.selectedAttachments,
                 status = MessageStatus.SENDING,
                 createdAt = System.currentTimeMillis(),
+                replyPreview = current.replyingTo,
             )
-                insertPendingMessage(message)
-            _state.update { it.copy(inputText = "", selectedAttachments = emptyList()) }
+            insertPendingMessage(message)
+            _state.update { it.copy(inputText = "", selectedAttachments = emptyList(), replyingTo = null) }
         }
     }
 
     private fun retryMessage(messageId: String) {
-        viewModelScope.launch {
-            retryMessageUseCase(messageId) // resets status to SENDING in Room and enqueues worker
-        }
+        viewModelScope.launch { retryMessageUseCase(messageId) }
     }
 }
+

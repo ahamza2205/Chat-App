@@ -41,6 +41,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.aa.chatapp.feature.chat.domain.model.Attachment
+import com.aa.chatapp.feature.chat.domain.model.ReplyPreview
 import com.aa.chatapp.feature.chat.presentation.chat.components.FullScreenImageViewer
 import com.aa.chatapp.feature.chat.presentation.chat.components.MessageBubble
 import com.aa.chatapp.feature.chat.presentation.chat.components.MessageInputBar
@@ -118,6 +119,8 @@ fun ChatScreen(
                 MessageInputBar(
                     text = state.inputText,
                     attachments = state.selectedAttachments,
+                    replyingTo = state.replyingTo,
+                    onClearReply = { viewModel.onIntent(ChatIntent.OnClearReply) },
                     onTextChange = { viewModel.onIntent(ChatIntent.OnInputChanged(it)) },
                     onSend = { viewModel.onIntent(ChatIntent.OnSendClicked) },
                     onAttach = {
@@ -168,6 +171,15 @@ fun ChatScreen(
                             showName   = !isOwn && isFirstInGroup,
                             showAvatar = !isOwn && isLastInGroup,
                             onRetry = { viewModel.onIntent(ChatIntent.OnRetryMessage(message.id)) },
+                            onReply = {
+                                val preview = ReplyPreview(
+                                    originalMessageId = message.id,
+                                    senderName = message.senderName,
+                                    textPreview = message.text?.take(80),
+                                    isMedia = message.attachments.isNotEmpty() && message.text == null,
+                                )
+                                viewModel.onIntent(ChatIntent.OnReplyToMessage(preview))
+                            },
                             onImageClick = { attachments, startIdx ->
                                 viewerAttachments = attachments
                                 viewerStartIndex = startIdx

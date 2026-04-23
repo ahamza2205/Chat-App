@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -30,28 +32,43 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.aa.chatapp.feature.chat.domain.model.Attachment
+import com.aa.chatapp.feature.chat.domain.model.ReplyPreview
 
 @Composable
 fun MessageInputBar(
     text: String,
     attachments: List<Attachment>,
+    replyingTo: ReplyPreview?,
+    onClearReply: () -> Unit,
     onTextChange: (String) -> Unit,
     onSend: () -> Unit,
     onAttach: () -> Unit,
     onRemoveAttachment: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val focusRequester = remember { FocusRequester() }
     val hasContent = text.isNotBlank() || attachments.isNotEmpty()
+
+    // Open keyboard automatically when a reply target is selected
+    LaunchedEffect(replyingTo) {
+        if (replyingTo != null) focusRequester.requestFocus()
+    }
 
     Surface(
         modifier = modifier
@@ -60,6 +77,9 @@ fun MessageInputBar(
         tonalElevation = 4.dp,
     ) {
         Column(modifier = Modifier.navigationBarsPadding()) {
+            replyingTo?.let {
+                ReplyPreviewBar(reply = it, onDismiss = onClearReply)
+            }
             if (attachments.isNotEmpty()) {
                 AttachmentPreviewStrip(
                     attachments = attachments,
@@ -82,7 +102,7 @@ fun MessageInputBar(
                     value = text,
                     onValueChange = onTextChange,
                     placeholder = { Text("Message") },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).focusRequester(focusRequester),
                     maxLines = 4,
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
@@ -153,6 +173,56 @@ private fun AttachmentPreviewStrip(
                 modifier = Modifier
                     .height(64.dp)
                     .padding(start = 4.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReplyPreviewBar(
+    reply: ReplyPreview,
+    onDismiss: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .width(3.dp)
+                .height(36.dp)
+                .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(2.dp)),
+        )
+        Spacer(Modifier.width(8.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = reply.senderName,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            val preview = when {
+                reply.isMedia -> "📷 Photo"
+                reply.textPreview != null -> reply.textPreview
+                else -> ""
+            }
+            Text(
+                text = preview,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        IconButton(onClick = onDismiss) {
+            Icon(
+                Icons.Default.Close,
+                contentDescription = "Clear reply",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
             )
         }
     }
