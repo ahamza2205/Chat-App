@@ -16,10 +16,13 @@ interface ChatRepository {
         failedReason: String? = null,
     )
 
-    /** Resets a FAILED message to SENDING and clears failedReason. */
     suspend fun retryMessage(messageId: String)
 
     suspend fun getMessageById(messageId: String): Message?
 
     suspend fun cancelMessage(messageId: String)
+
+    suspend fun deleteForMe(messageId: String)
+
+    suspend fun deleteForEveryone(messageId: String)
 }

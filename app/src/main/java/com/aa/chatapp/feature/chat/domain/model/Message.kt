@@ -1,7 +1,6 @@
 package com.aa.chatapp.feature.chat.domain.model
 
 data class Message(
-    /** Client-generated UUID — enables optimistic UI and realtime deduplication. */
     val id: String,
     val senderId: String,
     val senderName: String,
@@ -12,4 +11,5 @@ data class Message(
     val createdAt: Long,
     val failedReason: String? = null,
     val replyPreview: ReplyPreview? = null,
+    val isDeletedForEveryone: Boolean = false,
 )

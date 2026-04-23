@@ -204,6 +204,8 @@ fun ChatScreen(
                                 )
                                 viewModel.onIntent(ChatIntent.OnReplyToMessage(preview))
                             },
+                            onDeleteForMe = { viewModel.onIntent(ChatIntent.OnDeleteForMe(message.id)) },
+                            onDeleteForEveryone = { viewModel.onIntent(ChatIntent.OnDeleteForEveryone(message.id)) },
                             onImageClick = { attachments, startIdx ->
                                 viewerAttachments = attachments
                                 viewerStartIndex = startIdx

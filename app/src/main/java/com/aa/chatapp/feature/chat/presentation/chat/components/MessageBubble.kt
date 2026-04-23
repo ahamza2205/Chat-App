@@ -1,7 +1,9 @@
 package com.aa.chatapp.feature.chat.presentation.chat.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +20,8 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -25,6 +29,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -32,9 +37,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -54,6 +62,7 @@ private val CORNER_SMALL = 4.dp
 private const val MAX_COLLAPSED_LINES = 5
 private const val GRID_VISIBLE_COUNT = 4
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MessageBubble(
     message: Message,
@@ -62,6 +71,8 @@ fun MessageBubble(
     showName: Boolean,
     onRetry: () -> Unit,
     onReply: () -> Unit,
+    onDeleteForMe: () -> Unit,
+    onDeleteForEveryone: () -> Unit,
     onImageClick: (attachments: List<Attachment>, startIndex: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -89,7 +100,11 @@ fun MessageBubble(
     val bottomPadding = if (showAvatar || isOwn) 2.dp else 1.dp
     val maxBubbleWidth = LocalConfiguration.current.screenWidthDp.dp * 0.65f
 
-    SwipeToReply(isOwn = isOwn, onReply = onReply) {
+    SwipeToReply(
+        isOwn = isOwn,
+        onReply = onReply,
+        enabled = !message.isDeletedForEveryone
+    ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -116,18 +131,63 @@ fun MessageBubble(
                 )
             }
 
+            var showMenu by remember { mutableStateOf(false) }
+            val haptic = LocalHapticFeedback.current
+
             Surface(
                 shape = bubbleShape,
                 color = bubbleColor,
-                modifier = Modifier.widthIn(max = maxBubbleWidth),
+                modifier = Modifier
+                    .widthIn(max = maxBubbleWidth)
+                    .combinedClickable(
+                        onClick = {},
+                        onLongClick = {
+                            if (!message.isDeletedForEveryone) {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                showMenu = true
+                            }
+                        },
+                    ),
             ) {
+                Box {
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false },
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Delete for me") },
+                            onClick = { showMenu = false; onDeleteForMe() },
+                        )
+                        if (isOwn) {
+                            DropdownMenuItem(
+                                text = { Text("Delete for everyone", color = MaterialTheme.colorScheme.error) },
+                                onClick = { showMenu = false; onDeleteForEveryone() },
+                            )
+                        }
+                    }
                 Column {
+                    if (message.isDeletedForEveryone) {
+                        Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+                            Text(
+                                text = "\uD83D\uDEAB This message was deleted",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontStyle = FontStyle.Italic,
+                                color = contentColor.copy(alpha = 0.6f),
+                            )
+                            Row(
+                                modifier = Modifier.align(Alignment.End),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(time, color = contentColor.copy(alpha = 0.65f), style = MaterialTheme.typography.labelSmall, fontSize = 10.sp)
+                            }
+                        }
+                    } else {
+                    val audioAttachments = message.attachments.filter { it.mimeType.startsWith("audio/") }
+                    val imageAttachments = message.attachments.filter { !it.mimeType.startsWith("audio/") }
+
                     message.replyPreview?.let { reply ->
                         ReplyBlock(reply = reply, isOwn = isOwn)
                     }
-
-                    val audioAttachments = message.attachments.filter { it.mimeType.startsWith("audio/") }
-                    val imageAttachments = message.attachments.filter { !it.mimeType.startsWith("audio/") }
 
                     audioAttachments.forEach { audio ->
                         AudioBubble(
@@ -180,6 +240,7 @@ fun MessageBubble(
                                     style = MaterialTheme.typography.labelSmall,
                                 )
                             }
+
                         }
 
                         if (isOwn && message.status == MessageStatus.FAILED) {
@@ -190,13 +251,17 @@ fun MessageBubble(
                                 Text("Retry", style = MaterialTheme.typography.labelSmall, color = contentColor)
                             }
                         }
-                    }
+                        }
+                    } // else (not deleted)
                 }
+                } // Box
             }
         }
     }
     } // end SwipeToReply
 }
+
+
 
 @Composable
 private fun ReplyBlock(

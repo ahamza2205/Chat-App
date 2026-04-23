@@ -15,6 +15,7 @@ fun MessageEntity.toDomain(): Message = Message(
     createdAt = createdAt,
     failedReason = failedReason,
     replyPreview = replyPreview,
+    isDeletedForEveryone = isDeletedForEveryone,
 )
 
 fun Message.toEntity(): MessageEntity = MessageEntity(
@@ -28,5 +29,5 @@ fun Message.toEntity(): MessageEntity = MessageEntity(
     createdAt = createdAt,
     failedReason = failedReason,
     replyPreview = replyPreview,
+    isDeletedForEveryone = isDeletedForEveryone,
 )
-

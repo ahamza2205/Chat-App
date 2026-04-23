@@ -16,6 +16,7 @@ fun MessageEntity.toRemote(): RemoteMessage = RemoteMessage(
     status = MessageStatus.SENT.name,
     createdAt = createdAt,
     replyPreview = replyPreview?.let { remoteJson.encodeToString(it) },
+    isDeletedForEveryone = isDeletedForEveryone,
 )
 
 fun RemoteMessage.toEntity(): MessageEntity = MessageEntity(
@@ -33,5 +34,6 @@ fun RemoteMessage.toEntity(): MessageEntity = MessageEntity(
     replyPreview = replyPreview?.let {
         runCatching { remoteJson.decodeFromString<ReplyPreview>(it) }.getOrNull()
     },
+    isDeletedForEveryone = isDeletedForEveryone,
+    hiddenForMe = false,
 )
-

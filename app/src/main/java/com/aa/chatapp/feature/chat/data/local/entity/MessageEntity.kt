@@ -17,5 +17,6 @@ data class MessageEntity(
     val createdAt: Long,
     val failedReason: String?,
     val replyPreview: ReplyPreview? = null,
+    val isDeletedForEveryone: Boolean = false,
+    val hiddenForMe: Boolean = false,
 )
-

@@ -7,6 +7,8 @@ import com.aa.chatapp.feature.chat.domain.model.Attachment
 import com.aa.chatapp.feature.chat.domain.model.Message
 import com.aa.chatapp.feature.chat.domain.model.MessageStatus
 import com.aa.chatapp.feature.chat.domain.model.ReplyPreview
+import com.aa.chatapp.feature.chat.domain.usecase.DeleteForEveryoneUseCase
+import com.aa.chatapp.feature.chat.domain.usecase.DeleteForMeUseCase
 import com.aa.chatapp.feature.chat.domain.usecase.InsertPendingMessageUseCase
 import com.aa.chatapp.feature.chat.domain.usecase.ObserveMessagesUseCase
 import com.aa.chatapp.feature.chat.domain.usecase.RetryMessageUseCase
@@ -27,6 +29,8 @@ class ChatViewModel @Inject constructor(
     private val observeMessages: ObserveMessagesUseCase,
     private val insertPendingMessage: InsertPendingMessageUseCase,
     private val retryMessageUseCase: RetryMessageUseCase,
+    private val deleteForMe: DeleteForMeUseCase,
+    private val deleteForEveryone: DeleteForEveryoneUseCase,
     private val userPrefs: UserPreferencesDataSource,
 ) : ViewModel() {
 
@@ -84,6 +88,8 @@ class ChatViewModel @Inject constructor(
             is ChatIntent.OnRetryMessage -> retryMessage(intent.messageId)
             is ChatIntent.OnReplyToMessage -> _state.update { it.copy(replyingTo = intent.reply) }
             ChatIntent.OnClearReply -> _state.update { it.copy(replyingTo = null) }
+            is ChatIntent.OnDeleteForMe -> viewModelScope.launch { deleteForMe(intent.messageId) }
+            is ChatIntent.OnDeleteForEveryone -> viewModelScope.launch { deleteForEveryone(intent.messageId) }
         }
     }
 

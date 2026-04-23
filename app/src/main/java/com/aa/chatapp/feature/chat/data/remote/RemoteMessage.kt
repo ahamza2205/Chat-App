@@ -14,4 +14,5 @@ data class RemoteMessage(
     @SerialName("status")       val status: String = "SENT",
     @SerialName("created_at")   val createdAt: Long,
     @SerialName("reply_preview") val replyPreview: String? = null,
+    @SerialName("is_deleted_for_everyone") val isDeletedForEveryone: Boolean = false,
 )

@@ -8,6 +8,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkRequest
 import androidx.work.workDataOf
+import com.aa.chatapp.core.network.supabaseClient
 import com.aa.chatapp.core.work.WorkConstants
 import com.aa.chatapp.feature.chat.data.local.dao.MessageDao
 import com.aa.chatapp.feature.chat.data.mapper.toDomain
@@ -17,6 +18,7 @@ import com.aa.chatapp.feature.chat.domain.model.Message
 import com.aa.chatapp.feature.chat.domain.model.MessageStatus
 import com.aa.chatapp.feature.chat.domain.repository.ChatRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
+import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -82,6 +84,21 @@ class ChatRepositoryImpl @Inject constructor(
 
     override suspend fun getMessageById(messageId: String): Message? =
         dao.getMessageById(messageId)?.toDomain()
+
+    override suspend fun deleteForMe(messageId: String) {
+        dao.hideMessage(messageId)
+    }
+
+    override suspend fun deleteForEveryone(messageId: String) {
+        withContext(Dispatchers.IO) {
+            supabaseClient.postgrest["messages"].update({
+                set("is_deleted_for_everyone", true)
+                set("text", null as String?)
+                set("attachments", "[]")
+            }) { filter { eq("id", messageId) } }
+        }
+        dao.softDeleteForEveryone(messageId)
+    }
 
     private fun enqueueWork(messageId: String, replace: Boolean) {
         val request = OneTimeWorkRequestBuilder<SendMessageWorker>()

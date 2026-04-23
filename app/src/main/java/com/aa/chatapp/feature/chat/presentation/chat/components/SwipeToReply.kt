@@ -32,6 +32,7 @@ fun SwipeToReply(
     isOwn: Boolean,
     onReply: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     val offsetX = remember { Animatable(0f) }
@@ -40,7 +41,8 @@ fun SwipeToReply(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .pointerInput(isOwn) {
+            .pointerInput(isOwn, enabled) {
+                if (!enabled) return@pointerInput
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
                     var totalX = 0f

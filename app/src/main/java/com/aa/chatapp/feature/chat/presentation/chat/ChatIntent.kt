@@ -12,4 +12,6 @@ sealed interface ChatIntent {
     data class OnRetryMessage(val messageId: String) : ChatIntent
     data class OnReplyToMessage(val reply: ReplyPreview) : ChatIntent
     data object OnClearReply : ChatIntent
+    data class OnDeleteForMe(val messageId: String) : ChatIntent
+    data class OnDeleteForEveryone(val messageId: String) : ChatIntent
 }
