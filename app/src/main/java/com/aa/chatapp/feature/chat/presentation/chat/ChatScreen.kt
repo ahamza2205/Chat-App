@@ -1,5 +1,9 @@
 package com.aa.chatapp.feature.chat.presentation.chat
 
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -24,16 +28,20 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.aa.chatapp.feature.chat.domain.model.Attachment
+import com.aa.chatapp.feature.chat.presentation.chat.components.FullScreenImageViewer
 import com.aa.chatapp.feature.chat.presentation.chat.components.MessageBubble
 import com.aa.chatapp.feature.chat.presentation.chat.components.MessageInputBar
 
@@ -46,6 +54,18 @@ fun ChatScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    // Image viewer state
+    var viewerAttachments by remember { mutableStateOf<List<Attachment>?>(null) }
+    var viewerStartIndex by remember { mutableIntStateOf(0) }
+
+    val imagePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = 10),
+    ) { uris ->
+        if (uris.isNotEmpty()) {
+            viewModel.onIntent(ChatIntent.OnImagesSelected(uris.map { it.toString() }))
+        }
+    }
+
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
@@ -54,97 +74,118 @@ fun ChatScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Chat") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                ),
-                actions = {
-                    Box(
-                        modifier = Modifier
-                            .padding(end = 12.dp)
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                            .clickable { onNavigateToProfile() },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        if (state.currentAvatarUrl != null) {
-                            AsyncImage(
-                                model = state.currentAvatarUrl,
-                                contentDescription = "Your avatar",
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(CircleShape),
-                            )
-                        } else {
-                            Icon(
-                                Icons.Default.Person,
-                                contentDescription = "Profile",
-                                modifier = Modifier.size(20.dp),
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Chat") },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    ),
+                    actions = {
+                        Box(
+                            modifier = Modifier
+                                .padding(end = 12.dp)
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                                .clickable { onNavigateToProfile() },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            if (state.currentAvatarUrl != null) {
+                                AsyncImage(
+                                    model = state.currentAvatarUrl,
+                                    contentDescription = "Your avatar",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                )
+                            } else {
+                                Icon(
+                                    Icons.Default.Person,
+                                    contentDescription = "Profile",
+                                    modifier = Modifier.size(20.dp),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
                         }
-                    }
-                },
-            )
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        bottomBar = {
-            MessageInputBar(
-                text = state.inputText,
-                onTextChange = { viewModel.onIntent(ChatIntent.OnInputChanged(it)) },
-                onSend = { viewModel.onIntent(ChatIntent.OnSendClicked) },
-            )
-        },
-    ) { innerPadding ->
-        val listState = rememberLazyListState()
+                    },
+                )
+            },
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            bottomBar = {
+                MessageInputBar(
+                    text = state.inputText,
+                    attachments = state.selectedAttachments,
+                    onTextChange = { viewModel.onIntent(ChatIntent.OnInputChanged(it)) },
+                    onSend = { viewModel.onIntent(ChatIntent.OnSendClicked) },
+                    onAttach = {
+                        imagePicker.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    },
+                    onRemoveAttachment = { viewModel.onIntent(ChatIntent.OnRemoveAttachment(it)) },
+                )
+            },
+        ) { innerPadding ->
+            val listState = rememberLazyListState()
 
-        LaunchedEffect(state.messages.size) {
-            if (state.messages.isNotEmpty()) {
-                listState.animateScrollToItem(state.messages.lastIndex)
+            LaunchedEffect(state.messages.size) {
+                if (state.messages.isNotEmpty()) {
+                    listState.animateScrollToItem(state.messages.lastIndex)
+                }
+            }
+
+            if (state.messages.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "No messages yet. Say hello!",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            } else {
+                LazyColumn(
+                    state = listState,
+                    contentPadding = innerPadding,
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    itemsIndexed(items = state.messages, key = { _, msg -> msg.id }) { index, message ->
+                        val isOwn = message.senderId == state.currentUserId
+                        val prevSender = state.messages.getOrNull(index - 1)?.senderId
+                        val nextSender = state.messages.getOrNull(index + 1)?.senderId
+                        val isFirstInGroup = prevSender != message.senderId
+                        val isLastInGroup  = nextSender != message.senderId
+                        MessageBubble(
+                            message = message,
+                            isOwn = isOwn,
+                            showName   = !isOwn && isFirstInGroup,
+                            showAvatar = !isOwn && isLastInGroup,
+                            onRetry = { viewModel.onIntent(ChatIntent.OnRetryMessage(message.id)) },
+                            onImageClick = { attachments, startIdx ->
+                                viewerAttachments = attachments
+                                viewerStartIndex = startIdx
+                            },
+                        )
+                    }
+                }
             }
         }
 
-        if (state.messages.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = "No messages yet. Say hello!",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        } else {
-            LazyColumn(
-                state = listState,
-                contentPadding = innerPadding,
-                modifier = Modifier.fillMaxSize(),
-            ) {
-                itemsIndexed(items = state.messages, key = { _, msg -> msg.id }) { index, message ->
-                    val isOwn = message.senderId == state.currentUserId
-                    val prevSender = state.messages.getOrNull(index - 1)?.senderId
-                    val nextSender = state.messages.getOrNull(index + 1)?.senderId
-                    val isFirstInGroup = prevSender != message.senderId
-                    val isLastInGroup  = nextSender != message.senderId
-                    MessageBubble(
-                        message = message,
-                        isOwn = isOwn,
-                        showName   = !isOwn && isFirstInGroup,
-                        showAvatar = !isOwn && isLastInGroup,
-                        onRetry = { viewModel.onIntent(ChatIntent.OnRetryMessage(message.id)) },
-                    )
-                }
-            }
+        // Fullscreen image viewer overlay
+        viewerAttachments?.let { attachments ->
+            BackHandler { viewerAttachments = null }
+            FullScreenImageViewer(
+                attachments = attachments,
+                startIndex = viewerStartIndex,
+                onDismiss = { viewerAttachments = null },
+            )
         }
     }
 }

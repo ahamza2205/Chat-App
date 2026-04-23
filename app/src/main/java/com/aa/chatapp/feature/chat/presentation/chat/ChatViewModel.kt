@@ -2,15 +2,8 @@ package com.aa.chatapp.feature.chat.presentation.chat
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.work.BackoffPolicy
-import androidx.work.ExistingWorkPolicy
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-import androidx.work.WorkRequest
-import androidx.work.workDataOf
 import com.aa.chatapp.core.datastore.UserPreferencesDataSource
-import com.aa.chatapp.core.work.WorkConstants
-import com.aa.chatapp.feature.chat.data.worker.SendMessageWorker
+import com.aa.chatapp.feature.chat.domain.model.Attachment
 import com.aa.chatapp.feature.chat.domain.model.Message
 import com.aa.chatapp.feature.chat.domain.model.MessageStatus
 import com.aa.chatapp.feature.chat.domain.usecase.InsertPendingMessageUseCase
@@ -35,10 +28,13 @@ class ChatViewModel @Inject constructor(
     private val insertPendingMessage: InsertPendingMessageUseCase,
     private val retryMessageUseCase: RetryMessageUseCase,
     private val userPrefs: UserPreferencesDataSource,
-    private val workManager: WorkManager,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ChatState())
+
+    companion object {
+        private const val MAX_ATTACHMENTS = 10
+    }
     val state: StateFlow<ChatState> = _state.asStateFlow()
 
     private val _effects = Channel<ChatEffect>(Channel.BUFFERED)
@@ -76,11 +72,26 @@ class ChatViewModel @Inject constructor(
     fun onIntent(intent: ChatIntent) {
         when (intent) {
             is ChatIntent.OnInputChanged -> _state.update { it.copy(inputText = intent.text) }
+            is ChatIntent.OnImagesSelected -> addImages(intent.uris)
             is ChatIntent.OnRemoveAttachment -> _state.update {
                 it.copy(selectedAttachments = it.selectedAttachments.filter { a -> a.id != intent.attachmentId })
             }
             ChatIntent.OnSendClicked -> sendMessage()
             is ChatIntent.OnRetryMessage -> retryMessage(intent.messageId)
+        }
+    }
+
+    private fun addImages(uris: List<String>) {
+        _state.update { current ->
+            val existing = current.selectedAttachments
+            val remaining = (MAX_ATTACHMENTS - existing.size).coerceAtLeast(0)
+            val newAttachments = uris.take(remaining).map { uri ->
+                Attachment(id = UUID.randomUUID().toString(), localUri = uri, mimeType = "image/jpeg")
+            }
+            if (uris.size > remaining) {
+                _effects.trySend(ChatEffect.ShowSnackbar("Max $MAX_ATTACHMENTS images allowed"))
+            }
+            current.copy(selectedAttachments = existing + newAttachments)
         }
     }
 
@@ -102,29 +113,14 @@ class ChatViewModel @Inject constructor(
                 status = MessageStatus.SENDING,
                 createdAt = System.currentTimeMillis(),
             )
-            insertPendingMessage(message)
-            enqueueWork(message.id)
+                insertPendingMessage(message)
             _state.update { it.copy(inputText = "", selectedAttachments = emptyList()) }
         }
     }
 
     private fun retryMessage(messageId: String) {
         viewModelScope.launch {
-            retryMessageUseCase(messageId) // resets status to SENDING in Room
-            enqueueWork(messageId)
+            retryMessageUseCase(messageId) // resets status to SENDING in Room and enqueues worker
         }
-    }
-
-    private fun enqueueWork(messageId: String) {
-        val request = OneTimeWorkRequestBuilder<SendMessageWorker>()
-            .setInputData(workDataOf(WorkConstants.KEY_MESSAGE_ID to messageId))
-            .addTag(WorkConstants.TAG_SEND_MESSAGE)
-            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, WorkRequest.MIN_BACKOFF_MILLIS, TimeUnit.MILLISECONDS)
-            .build()
-        workManager.enqueueUniqueWork(
-            WorkConstants.uniqueWorkName(messageId),
-            ExistingWorkPolicy.KEEP,
-            request,
-        )
     }
 }

@@ -1,6 +1,7 @@
 package com.aa.chatapp.feature.chat.data.worker
 
 import android.content.Context
+import android.net.Uri
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -30,29 +31,49 @@ class SendMessageWorker @AssistedInject constructor(
 
         val entity = dao.getMessageById(messageId) ?: return Result.failure()
 
-        setForeground(notificationHelper.createForegroundInfo())
+        val pendingAttachments = entity.attachments.filter { it.localUri != null }
+
+        if (pendingAttachments.size > 1) {
+            setForeground(notificationHelper.createUploadForegroundInfo(messageId, 1, pendingAttachments.size))
+        } else {
+            setForeground(notificationHelper.createForegroundInfo(messageId))
+        }
 
         return try {
-            val uploaded = entity.attachments.mapNotNull { attachment ->
-                val localPath = attachment.localUri ?: return@mapNotNull null
-                val remotePath = "$messageId/${localPath.substringAfterLast('/')}"
-                val remoteUrl = supabaseClient.storage["attachments"].let { bucket ->
-                    bucket.upload(remotePath, java.io.File(localPath).readBytes()) { upsert = true }
-                    bucket.publicUrl(remotePath)
+            val uploaded = entity.attachments.mapIndexed { index, attachment ->
+                val localUri = attachment.localUri ?: return@mapIndexed attachment
+
+                if (pendingAttachments.size > 1) {
+                    setForeground(
+                        notificationHelper.createUploadForegroundInfo(messageId, index + 1, pendingAttachments.size)
+                    )
+                } else {
+                    setForeground(notificationHelper.createForegroundInfo(messageId))
                 }
+
+                val bytes = applicationContext.contentResolver
+                    .openInputStream(Uri.parse(localUri))?.use { it.readBytes() }
+                    ?: throw IllegalStateException("Cannot read $localUri")
+
+                val remotePath = "$messageId/${attachment.id}.jpg"
+                val bucket = supabaseClient.storage["attachments"]
+                bucket.upload(remotePath, bytes) { upsert = true }
+                val remoteUrl = bucket.publicUrl(remotePath)
                 attachment.copy(localUri = null, remoteUrl = remoteUrl)
             }
 
-            val readyEntity = if (uploaded.isNotEmpty()) entity.copy(attachments = uploaded) else entity
+            val readyEntity = entity.copy(attachments = uploaded)
             supabaseClient.postgrest["messages"].insert(readyEntity.toRemote())
             dao.updateMessageStatus(messageId, MessageStatus.SENT.name, null)
             Result.success()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            if (runAttemptCount < 3) Result.retry()
-            else {
+            if (runAttemptCount < 3) {
+                Result.retry()
+            } else {
                 dao.updateMessageStatus(messageId, MessageStatus.FAILED.name, e.message)
+                notificationHelper.showFailedNotification(messageId)
                 Result.failure()
             }
         }

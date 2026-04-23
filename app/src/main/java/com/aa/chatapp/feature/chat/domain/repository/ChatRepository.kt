@@ -20,4 +20,6 @@ interface ChatRepository {
     suspend fun retryMessage(messageId: String)
 
     suspend fun getMessageById(messageId: String): Message?
+
+    suspend fun cancelMessage(messageId: String)
 }

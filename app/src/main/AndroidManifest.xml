@@ -49,6 +49,15 @@
             android:foregroundServiceType="dataSync"
             tools:node="merge" />
 
+        <receiver
+            android:name=".core.notifications.NotificationActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.aa.chatapp.ACTION_CANCEL_SEND" />
+                <action android:name="com.aa.chatapp.ACTION_RETRY_SEND" />
+            </intent-filter>
+        </receiver>
+
     </application>
 
 </manifest>
