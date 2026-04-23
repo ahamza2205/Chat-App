@@ -76,6 +76,10 @@ class ChatViewModel @Inject constructor(
             is ChatIntent.OnRemoveAttachment -> _state.update {
                 it.copy(selectedAttachments = it.selectedAttachments.filter { a -> a.id != intent.attachmentId })
             }
+            is ChatIntent.OnVoiceNoteReady -> {
+                _state.update { it.copy(selectedAttachments = listOf(intent.attachment)) }
+                sendMessage()
+            }
             ChatIntent.OnSendClicked -> sendMessage()
             is ChatIntent.OnRetryMessage -> retryMessage(intent.messageId)
             is ChatIntent.OnReplyToMessage -> _state.update { it.copy(replyingTo = intent.reply) }

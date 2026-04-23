@@ -1,5 +1,7 @@
 package com.aa.chatapp.feature.chat.presentation.chat
 
+import android.Manifest
+import android.content.pm.PackageManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -36,7 +38,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
@@ -54,10 +58,21 @@ fun ChatScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
-    // Image viewer state
     var viewerAttachments by remember { mutableStateOf<List<Attachment>?>(null) }
     var viewerStartIndex by remember { mutableIntStateOf(0) }
+
+    // Mic permission
+    var micGranted by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
+                PackageManager.PERMISSION_GRANTED
+        )
+    }
+    val micPermLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted -> micGranted = granted }
 
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = 10),
@@ -129,6 +144,9 @@ fun ChatScreen(
                         )
                     },
                     onRemoveAttachment = { viewModel.onIntent(ChatIntent.OnRemoveAttachment(it)) },
+                    onMicClick = { micPermLauncher.launch(Manifest.permission.RECORD_AUDIO) },
+                    onVoiceNoteReady = { viewModel.onIntent(ChatIntent.OnVoiceNoteReady(it)) },
+                    micPermissionGranted = micGranted,
                 )
             },
         ) { innerPadding ->
@@ -172,11 +190,17 @@ fun ChatScreen(
                             showAvatar = !isOwn && isLastInGroup,
                             onRetry = { viewModel.onIntent(ChatIntent.OnRetryMessage(message.id)) },
                             onReply = {
+                                val hasAudio = message.attachments.any { it.mimeType.startsWith("audio/") }
+                                val hasMedia = message.attachments.isNotEmpty() && message.text == null
                                 val preview = ReplyPreview(
                                     originalMessageId = message.id,
                                     senderName = message.senderName,
-                                    textPreview = message.text?.take(80),
-                                    isMedia = message.attachments.isNotEmpty() && message.text == null,
+                                    textPreview = when {
+                                        hasAudio -> "🎤 Voice note"
+                                        message.text != null -> message.text.take(80)
+                                        else -> null
+                                    },
+                                    isMedia = hasMedia && !hasAudio,
                                 )
                                 viewModel.onIntent(ChatIntent.OnReplyToMessage(preview))
                             },
@@ -190,7 +214,6 @@ fun ChatScreen(
             }
         }
 
-        // Fullscreen image viewer overlay
         viewerAttachments?.let { attachments ->
             BackHandler { viewerAttachments = null }
             FullScreenImageViewer(

@@ -55,7 +55,11 @@ class SendMessageWorker @AssistedInject constructor(
                     .openInputStream(Uri.parse(localUri))?.use { it.readBytes() }
                     ?: throw IllegalStateException("Cannot read $localUri")
 
-                val remotePath = "$messageId/${attachment.id}.jpg"
+                val ext = when {
+                    attachment.mimeType.startsWith("audio/") -> "m4a"
+                    else -> "jpg"
+                }
+                val remotePath = "$messageId/${attachment.id}.$ext"
                 val bucket = supabaseClient.storage["attachments"]
                 bucket.upload(remotePath, bytes) { upsert = true }
                 val remoteUrl = bucket.publicUrl(remotePath)

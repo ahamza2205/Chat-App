@@ -81,18 +81,24 @@ serve(async (req: Request) => {
     const senderName: string = record.sender_name ?? "Someone"
     const text: string = (record.text ?? "").trim()
 
-    // Detect media — attachments is a JSON string like '[{"id":"...","remoteUrl":"..."}]'
+    // Detect media — attachments is a JSON string like '[{"id":"...","remoteUrl":"...","mimeType":"audio/mp4"}]'
     let hasMedia = false
+    let hasAudio = false
     try {
       const raw = record.attachments
       const att = typeof raw === "string" ? JSON.parse(raw) : raw
-      hasMedia = Array.isArray(att) && att.length > 0
+      if (Array.isArray(att) && att.length > 0) {
+        hasMedia = true
+        hasAudio = att.some((a: any) => typeof a.mimeType === "string" && a.mimeType.startsWith("audio/"))
+      }
     } catch { /* ignore parse errors */ }
 
-    // Build preview: text > media label > "New message" fallback
+    // Build preview: text > audio label > photo label > fallback
     let preview: string
     if (text.length > 0) {
       preview = text.slice(0, 200)
+    } else if (hasAudio) {
+      preview = "Voice note"
     } else if (hasMedia) {
       preview = "Photo"
     } else {

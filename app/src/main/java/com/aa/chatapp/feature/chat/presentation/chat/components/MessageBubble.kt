@@ -125,12 +125,24 @@ fun MessageBubble(
                     message.replyPreview?.let { reply ->
                         ReplyBlock(reply = reply, isOwn = isOwn)
                     }
-                    if (message.attachments.isNotEmpty()) {
+
+                    val audioAttachments = message.attachments.filter { it.mimeType.startsWith("audio/") }
+                    val imageAttachments = message.attachments.filter { !it.mimeType.startsWith("audio/") }
+
+                    audioAttachments.forEach { audio ->
+                        AudioBubble(
+                            attachment = audio,
+                            contentColor = contentColor,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+                        )
+                    }
+
+                    if (imageAttachments.isNotEmpty()) {
                         ImageGrid(
-                            attachments = message.attachments,
+                            attachments = imageAttachments,
                             bubbleShape = bubbleShape,
                             hasText = message.text != null,
-                            onImageClick = { index -> onImageClick(message.attachments, index) },
+                            onImageClick = { index -> onImageClick(imageAttachments, index) },
                         )
                     }
 
