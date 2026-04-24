@@ -4,10 +4,8 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aa.chatapp.core.datastore.UserPreferencesDataSource
-import com.aa.chatapp.core.network.supabaseClient
 import com.aa.chatapp.feature.chat.domain.repository.ChatRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -52,9 +50,7 @@ class ProfileViewModel @Inject constructor(
             try {
                 val bytes = getBytes(uri) ?: return@launch
                 val userId = userPrefs.userId.first() ?: return@launch
-                val remotePath = "avatars/$userId.jpg"
-                supabaseClient.storage["attachments"].upload(remotePath, bytes) { upsert = true }
-                val remoteUrl = supabaseClient.storage["attachments"].publicUrl(remotePath)
+                val remoteUrl = chatRepository.uploadAvatar(userId, bytes)
                 userPrefs.saveAvatarUrl(remoteUrl)
                 chatRepository.updateUserProfile(userId, _state.value.name, remoteUrl)
                 _state.update { it.copy(avatarUrl = remoteUrl, isSaving = false) }

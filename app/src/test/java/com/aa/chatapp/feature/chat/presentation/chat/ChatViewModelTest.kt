@@ -1,6 +1,8 @@
 package com.aa.chatapp.feature.chat.presentation.chat
 
 import com.aa.chatapp.core.datastore.UserPreferencesDataSource
+import com.aa.chatapp.feature.chat.domain.usecase.DeleteForEveryoneUseCase
+import com.aa.chatapp.feature.chat.domain.usecase.DeleteForMeUseCase
 import com.aa.chatapp.feature.chat.domain.usecase.InsertPendingMessageUseCase
 import com.aa.chatapp.feature.chat.domain.usecase.ObserveMessagesUseCase
 import com.aa.chatapp.feature.chat.domain.usecase.RetryMessageUseCase
@@ -28,6 +30,8 @@ class ChatViewModelTest {
     private lateinit var observeMessages: ObserveMessagesUseCase
     private lateinit var insertPendingMessage: InsertPendingMessageUseCase
     private lateinit var retryMessage: RetryMessageUseCase
+    private lateinit var deleteForMe: DeleteForMeUseCase
+    private lateinit var deleteForEveryone: DeleteForEveryoneUseCase
     private lateinit var userPrefs: UserPreferencesDataSource
     private lateinit var viewModel: ChatViewModel
 
@@ -38,6 +42,8 @@ class ChatViewModelTest {
         observeMessages = mockk()
         insertPendingMessage = mockk()
         retryMessage = mockk()
+        deleteForMe = mockk()
+        deleteForEveryone = mockk()
         userPrefs = mockk()
 
         every { observeMessages.invoke() } returns flowOf(emptyList())
@@ -45,7 +51,7 @@ class ChatViewModelTest {
         every { userPrefs.userName } returns flowOf("u1-name")
         every { userPrefs.avatarUrl } returns flowOf(null)
 
-        viewModel = ChatViewModel(observeMessages, insertPendingMessage, retryMessage, userPrefs)
+        viewModel = ChatViewModel(observeMessages, insertPendingMessage, retryMessage, deleteForMe, deleteForEveryone, userPrefs)
     }
 
     @After

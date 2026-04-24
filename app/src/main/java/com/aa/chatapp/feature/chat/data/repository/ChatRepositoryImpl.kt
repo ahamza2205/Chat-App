@@ -19,6 +19,7 @@ import com.aa.chatapp.feature.chat.domain.model.MessageStatus
 import com.aa.chatapp.feature.chat.domain.repository.ChatRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -110,6 +111,15 @@ class ChatRepositoryImpl @Inject constructor(
             }
         }
         dao.updateUserProfile(userId, name, avatarUrl)
+    }
+
+    override suspend fun uploadAvatar(userId: String, imageBytes: ByteArray): String {
+        return withContext(Dispatchers.IO) {
+            val remotePath = "avatars/$userId.jpg"
+            val bucket = supabaseClient.storage["attachments"]
+            bucket.upload(remotePath, imageBytes) { upsert = true }
+            bucket.publicUrl(remotePath)
+        }
     }
 
     private fun enqueueWork(messageId: String, replace: Boolean) {
