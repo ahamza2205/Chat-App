@@ -25,4 +25,6 @@ interface ChatRepository {
     suspend fun deleteForMe(messageId: String)
 
     suspend fun deleteForEveryone(messageId: String)
+
+    suspend fun updateUserProfile(userId: String, name: String, avatarUrl: String?)
 }

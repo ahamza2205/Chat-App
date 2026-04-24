@@ -41,4 +41,7 @@ interface MessageDao {
 
     @Query("UPDATE messages SET isDeletedForEveryone = 1, text = NULL, attachments = '[]' WHERE id = :messageId")
     suspend fun softDeleteForEveryone(messageId: String)
+
+    @Query("UPDATE messages SET senderName = :name, senderAvatarUrl = :avatarUrl WHERE senderId = :userId")
+    suspend fun updateUserProfile(userId: String, name: String, avatarUrl: String?)
 }

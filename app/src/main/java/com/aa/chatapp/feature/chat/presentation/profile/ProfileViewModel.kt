@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aa.chatapp.core.datastore.UserPreferencesDataSource
 import com.aa.chatapp.core.network.supabaseClient
+import com.aa.chatapp.feature.chat.domain.repository.ChatRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +27,7 @@ data class ProfileState(
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val userPrefs: UserPreferencesDataSource,
+    private val chatRepository: ChatRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ProfileState())
@@ -54,6 +56,7 @@ class ProfileViewModel @Inject constructor(
                 supabaseClient.storage["attachments"].upload(remotePath, bytes) { upsert = true }
                 val remoteUrl = supabaseClient.storage["attachments"].publicUrl(remotePath)
                 userPrefs.saveAvatarUrl(remoteUrl)
+                chatRepository.updateUserProfile(userId, _state.value.name, remoteUrl)
                 _state.update { it.copy(avatarUrl = remoteUrl, isSaving = false) }
             } catch (e: Exception) {
                 _state.update { it.copy(isSaving = false, error = "Avatar upload failed") }
@@ -70,6 +73,11 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isSaving = true, error = null) }
             userPrefs.saveUserName(name)
+            val userId = userPrefs.userId.first()
+            if (userId != null) {
+                val avatarUrl = userPrefs.avatarUrl.first()
+                chatRepository.updateUserProfile(userId, name, avatarUrl)
+            }
             _state.update { it.copy(isSaving = false, savedSuccess = true) }
         }
     }

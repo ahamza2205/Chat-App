@@ -100,6 +100,18 @@ class ChatRepositoryImpl @Inject constructor(
         dao.softDeleteForEveryone(messageId)
     }
 
+    override suspend fun updateUserProfile(userId: String, name: String, avatarUrl: String?) {
+        withContext(Dispatchers.IO) {
+            runCatching {
+                supabaseClient.postgrest["messages"].update({
+                    set("sender_name", name)
+                    set("sender_avatar_url", avatarUrl)
+                }) { filter { eq("sender_id", userId) } }
+            }
+        }
+        dao.updateUserProfile(userId, name, avatarUrl)
+    }
+
     private fun enqueueWork(messageId: String, replace: Boolean) {
         val request = OneTimeWorkRequestBuilder<SendMessageWorker>()
             .setInputData(workDataOf(WorkConstants.KEY_MESSAGE_ID to messageId))

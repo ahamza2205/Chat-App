@@ -15,10 +15,33 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import javax.inject.Inject
 
+import io.github.jan.supabase.postgrest.postgrest
+
 class SupabaseRealtimeDataSource @Inject constructor(
     private val dao: MessageDao,
 ) {
     fun start(scope: CoroutineScope) {
+        scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching {
+                val remotes = supabaseClient.postgrest["messages"].select().decodeList<RemoteMessage>()
+                remotes.forEach { remote ->
+                    dao.upsertPreservingHidden(
+                        id = remote.id,
+                        senderId = remote.senderId,
+                        senderName = remote.senderName,
+                        senderAvatarUrl = remote.senderAvatarUrl,
+                        text = remote.text,
+                        attachments = remote.attachments,
+                        status = remote.status,
+                        createdAt = remote.createdAt,
+                        failedReason = null,
+                        replyPreview = remote.replyPreview,
+                        isDeletedForEveryone = remote.isDeletedForEveryone,
+                    )
+                }
+            }
+        }
+
         val channel = supabaseClient.channel("messages-channel")
 
         channel.postgresChangeFlow<PostgresAction>(schema = "public") {
