@@ -38,6 +38,7 @@ class ChatApplication : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
+        appScope.launch { runCatching { userPrefs.getOrGenerateUserId() } }
         realtimeDataSource.start(appScope)
         fetchAndStoreFcmToken()
         startTokenSync()

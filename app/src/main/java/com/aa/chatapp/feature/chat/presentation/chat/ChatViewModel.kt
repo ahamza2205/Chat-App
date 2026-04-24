@@ -46,12 +46,6 @@ class ChatViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            if (userPrefs.userId.first() == null) {
-                val id = UUID.randomUUID().toString()
-                userPrefs.saveUserIdentity(id = id, name = "User ${id.take(4)}")
-            }
-        }
-        viewModelScope.launch {
             observeMessages().collect { messages ->
                 _state.update { it.copy(messages = messages) }
             }

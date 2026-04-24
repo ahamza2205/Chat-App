@@ -5,7 +5,9 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.util.UUID
 import javax.inject.Inject
 
 class UserPreferencesDataSource @Inject constructor(
@@ -22,6 +24,14 @@ class UserPreferencesDataSource @Inject constructor(
             prefs[KEY_USER_NAME] = name
             avatarUrl?.let { prefs[KEY_AVATAR_URL] = it }
         }
+    }
+
+    suspend fun getOrGenerateUserId(): String {
+        val existing = dataStore.data.first()[KEY_USER_ID]
+        if (existing != null) return existing
+        val newId = UUID.randomUUID().toString()
+        saveUserIdentity(newId, "User ${newId.take(4)}")
+        return newId
     }
 
     suspend fun saveUserName(name: String) {
