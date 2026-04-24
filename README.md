@@ -25,7 +25,7 @@ This project was built as a take-home technical assessment with strong focus on:
   * Sent
   * Failed
 
-🎥 Demo Video: [Watch Core Messaging Demo](ADD_LINK_HERE)
+🎥 Demo Video: [Watch Core Messaging Demo](https://drive.google.com/file/d/1qsd2g1C7pIwAkGm7oM_XwpLUQ9NEA6Oh/view?usp=sharing)
 
 ---
 
@@ -37,7 +37,7 @@ This project was built as a take-home technical assessment with strong focus on:
 * Retry failed uploads safely
 * Ongoing upload notifications
 
-🎥 Demo Video: [Watch Media Messages Demo](ADD_LINK_HERE)
+🎥 Demo Video: [Watch Media Messages Demo](https://drive.google.com/file/d/1u2dKZIG3DEaEl18UXpJuRm5Q7p2i2KLf/view?usp=sharing)
 
 ---
 
@@ -48,7 +48,7 @@ This project was built as a take-home technical assessment with strong focus on:
 * Background upload using the existing sending pipeline
 * Audio message rendering inside chat
 
-🎥 Demo Video: [Watch Voice Notes Demo](ADD_LINK_HERE)
+🎥 Demo Video: [Watch Voice Notes Demo](https://drive.google.com/file/d/1DAbw1q4RJWZbvlC6DQ1yMYzmpAXZsV4i/view?usp=sharing)
 
 ---
 
@@ -59,7 +59,7 @@ This project was built as a take-home technical assessment with strong focus on:
 * Reply block rendered inside message bubble
 * Reply snapshot preserved for consistency
 
-🎥 Demo Video: [Watch Reply Feature Demo](ADD_LINK_HERE)
+🎥 Demo Video: [Watch Reply Feature Demo](https://drive.google.com/file/d/1Ur2QiqNrmSeXrAkMhPrPuqkZJAJdaCP4/view?usp=sharing)
 
 ---
 
@@ -75,7 +75,7 @@ This project was built as a take-home technical assessment with strong focus on:
 * Replaced with:
   `This message was deleted`
 
-🎥 Demo Video: [Watch Delete Feature Demo](ADD_LINK_HERE)
+🎥 Demo Video: [Watch Delete Feature Demo](https://drive.google.com/file/d/15wvQJmnw3GCfOqARKZPt8oqoewzT4py1/view?usp=sharing)
 
 ---
 
@@ -86,7 +86,7 @@ This project was built as a take-home technical assessment with strong focus on:
 * Installation-based UUID stored in DataStore
 * No login/auth required
 
-🎥 Demo Video: [Watch Profile Flow Demo](ADD_LINK_HERE)
+🎥 Demo Video: [Watch Profile Flow Demo](https://drive.google.com/file/d/1d1LpvgjXHY0K3U2bEG1VJUhYhixx7VP0/view?usp=sharing)
 
 ---
 
@@ -104,7 +104,7 @@ This project was built as a take-home technical assessment with strong focus on:
 * Works in background and closed app
 * Powered by Firebase Cloud Messaging + Supabase Edge Function
 
-🎥 Demo Video: [Watch Notifications Demo](ADD_LINK_HERE)
+🎥 Demo Video: [Watch Notifications Demo](https://drive.google.com/file/d/1d61zGQJ2Clq264-PIWADmWja_Vz0sdsz/view?usp=sharing)
 
 ---
 
