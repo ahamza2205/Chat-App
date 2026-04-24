@@ -60,8 +60,13 @@ fun ChatScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
 
-    var viewerAttachments by remember { mutableStateOf<List<Attachment>?>(null) }
-    var viewerStartIndex by remember { mutableIntStateOf(0) }
+    LaunchedEffect(viewModel) {
+        viewModel.effects.collect { effect ->
+            when (effect) {
+                is ChatEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message)
+            }
+        }
+    }
 
     // Mic permission
     var micGranted by remember {
@@ -82,13 +87,34 @@ fun ChatScreen(
         }
     }
 
-    LaunchedEffect(viewModel) {
-        viewModel.effects.collect { effect ->
-            when (effect) {
-                is ChatEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message)
-            }
-        }
-    }
+    ChatScreenContent(
+        state = state,
+        snackbarHostState = snackbarHostState,
+        micGranted = micGranted,
+        onNavigateToProfile = onNavigateToProfile,
+        onIntent = viewModel::onIntent,
+        onLaunchImagePicker = {
+            imagePicker.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+            )
+        },
+        onLaunchMicPermission = { micPermLauncher.launch(Manifest.permission.RECORD_AUDIO) }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ChatScreenContent(
+    state: ChatState,
+    snackbarHostState: SnackbarHostState,
+    micGranted: Boolean,
+    onNavigateToProfile: () -> Unit,
+    onIntent: (ChatIntent) -> Unit,
+    onLaunchImagePicker: () -> Unit,
+    onLaunchMicPermission: () -> Unit,
+) {
+    var viewerAttachments by remember { mutableStateOf<List<Attachment>?>(null) }
+    var viewerStartIndex by remember { mutableIntStateOf(0) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
@@ -139,17 +165,13 @@ fun ChatScreen(
                     attachments = state.selectedAttachments,
                     replyingTo = state.replyingTo,
                     replyingToDeleted = state.replyingTo?.originalMessageId in deletedMessageIds,
-                    onClearReply = { viewModel.onIntent(ChatIntent.OnClearReply) },
-                    onTextChange = { viewModel.onIntent(ChatIntent.OnInputChanged(it)) },
-                    onSend = { viewModel.onIntent(ChatIntent.OnSendClicked) },
-                    onAttach = {
-                        imagePicker.launch(
-                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                        )
-                    },
-                    onRemoveAttachment = { viewModel.onIntent(ChatIntent.OnRemoveAttachment(it)) },
-                    onMicClick = { micPermLauncher.launch(Manifest.permission.RECORD_AUDIO) },
-                    onVoiceNoteReady = { viewModel.onIntent(ChatIntent.OnVoiceNoteReady(it)) },
+                    onClearReply = { onIntent(ChatIntent.OnClearReply) },
+                    onTextChange = { onIntent(ChatIntent.OnInputChanged(it)) },
+                    onSend = { onIntent(ChatIntent.OnSendClicked) },
+                    onAttach = onLaunchImagePicker,
+                    onRemoveAttachment = { onIntent(ChatIntent.OnRemoveAttachment(it)) },
+                    onMicClick = onLaunchMicPermission,
+                    onVoiceNoteReady = { onIntent(ChatIntent.OnVoiceNoteReady(it)) },
                     micPermissionGranted = micGranted,
                 )
             },
@@ -198,7 +220,7 @@ fun ChatScreen(
                             showName   = !isOwn && isFirstInGroup,
                             showAvatar = !isOwn && isLastInGroup,
                             isReplyDeleted = message.replyPreview?.originalMessageId in deletedMessageIds,
-                            onRetry = { viewModel.onIntent(ChatIntent.OnRetryMessage(message.id)) },
+                            onRetry = { onIntent(ChatIntent.OnRetryMessage(message.id)) },
                             onReply = {
                                 val hasAudio = message.attachments.any { it.mimeType.startsWith("audio/") }
                                 val hasMedia = message.attachments.isNotEmpty() && message.text == null
@@ -212,10 +234,10 @@ fun ChatScreen(
                                     },
                                     isMedia = hasMedia && !hasAudio,
                                 )
-                                viewModel.onIntent(ChatIntent.OnReplyToMessage(preview))
+                                onIntent(ChatIntent.OnReplyToMessage(preview))
                             },
-                            onDeleteForMe = { viewModel.onIntent(ChatIntent.OnDeleteForMe(message.id)) },
-                            onDeleteForEveryone = { viewModel.onIntent(ChatIntent.OnDeleteForEveryone(message.id)) },
+                            onDeleteForMe = { onIntent(ChatIntent.OnDeleteForMe(message.id)) },
+                            onDeleteForEveryone = { onIntent(ChatIntent.OnDeleteForEveryone(message.id)) },
                             onImageClick = { attachments, startIdx ->
                                 viewerAttachments = attachments
                                 viewerStartIndex = startIdx

@@ -58,6 +58,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -216,7 +217,7 @@ private fun NormalInputRow(
             value = text,
             onValueChange = onTextChange,
             placeholder = { Text("Message") },
-            modifier = Modifier.weight(1f).focusRequester(focusRequester),
+            modifier = Modifier.weight(1f).focusRequester(focusRequester).testTag("MessageInputTextField"),
             maxLines = 4,
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = Color.Transparent,
@@ -228,7 +229,10 @@ private fun NormalInputRow(
             keyboardActions = KeyboardActions(onSend = { onSend() }),
         )
         if (hasContent) {
-            IconButton(onClick = onSend) {
+            IconButton(
+                onClick = onSend,
+                modifier = Modifier.testTag("SendMessageButton")
+            ) {
                 Icon(Icons.AutoMirrored.Filled.Send, "Send", tint = MaterialTheme.colorScheme.primary)
             }
         } else {
@@ -459,7 +463,10 @@ private fun ReplyPreviewBar(reply: ReplyPreview, isDeleted: Boolean, onDismiss: 
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        IconButton(onClick = onDismiss) {
+        IconButton(
+            onClick = onDismiss,
+            modifier = Modifier.testTag("ClearReplyButton")
+        ) {
             Icon(Icons.Default.Close, "Clear reply",
                 tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
         }

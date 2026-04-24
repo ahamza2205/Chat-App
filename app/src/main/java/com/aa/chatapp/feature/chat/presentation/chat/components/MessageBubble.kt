@@ -41,6 +41,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -148,7 +149,7 @@ fun MessageBubble(
                                 showMenu = true
                             }
                         },
-                    ),
+                    ).testTag("MessageBubble_${message.id}"),
             ) {
                 Box {
                     DropdownMenu(
