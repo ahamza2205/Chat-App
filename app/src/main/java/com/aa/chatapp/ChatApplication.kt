@@ -3,6 +3,7 @@ package com.aa.chatapp
 import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import com.aa.chatapp.core.coroutines.CoroutineContextProvider
 import com.aa.chatapp.core.datastore.UserPreferencesDataSource
 import com.aa.chatapp.core.network.supabaseClient
 import com.aa.chatapp.feature.chat.data.remote.SupabaseRealtimeDataSource
@@ -10,7 +11,6 @@ import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.HiltAndroidApp
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
@@ -25,8 +25,11 @@ class ChatApplication : Application(), Configuration.Provider {
     @Inject lateinit var workerFactory: HiltWorkerFactory
     @Inject lateinit var realtimeDataSource: SupabaseRealtimeDataSource
     @Inject lateinit var userPrefs: UserPreferencesDataSource
+    @Inject lateinit var contextProvider: CoroutineContextProvider
 
-    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val appScope by lazy {
+        CoroutineScope(SupervisorJob() + contextProvider.io)
+    }
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()

@@ -10,12 +10,12 @@ import com.aa.chatapp.MainActivity
 import com.aa.chatapp.core.datastore.UserPreferencesDataSource
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import com.aa.chatapp.core.coroutines.CoroutineContextProvider
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
@@ -26,9 +26,17 @@ class ChatMessagingService : FirebaseMessagingService() {
     @InstallIn(SingletonComponent::class)
     interface MessagingEntryPoint {
         fun userPrefs(): UserPreferencesDataSource
+        fun contextProvider(): CoroutineContextProvider
     }
 
-    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val contextProvider: CoroutineContextProvider by lazy {
+        EntryPointAccessors.fromApplication(applicationContext, MessagingEntryPoint::class.java)
+            .contextProvider()
+    }
+
+    private val serviceScope by lazy {
+        CoroutineScope(SupervisorJob() + contextProvider.io)
+    }
 
     private val userPrefs: UserPreferencesDataSource by lazy {
         EntryPointAccessors.fromApplication(applicationContext, MessagingEntryPoint::class.java)

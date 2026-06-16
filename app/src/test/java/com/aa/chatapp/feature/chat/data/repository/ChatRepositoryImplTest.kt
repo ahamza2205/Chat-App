@@ -3,6 +3,7 @@ package com.aa.chatapp.feature.chat.data.repository
 import android.content.Context
 import androidx.work.ExistingWorkPolicy
 import androidx.work.WorkManager
+import com.aa.chatapp.core.coroutines.CoroutineContextProvider
 import com.aa.chatapp.core.work.WorkConstants
 import com.aa.chatapp.feature.chat.data.local.dao.MessageDao
 import com.aa.chatapp.feature.chat.data.local.entity.MessageEntity
@@ -15,10 +16,13 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
 import java.io.File
+import kotlin.coroutines.CoroutineContext
 
 class ChatRepositoryImplTest {
 
@@ -27,12 +31,21 @@ class ChatRepositoryImplTest {
     private lateinit var context: Context
     private lateinit var repository: ChatRepositoryImpl
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Before
     fun setup() {
         dao = mockk()
         workManager = mockk()
         context = mockk()
-        repository = ChatRepositoryImpl(dao, workManager, context)
+        
+        val testDispatcher = UnconfinedTestDispatcher()
+        val testContextProvider = object : CoroutineContextProvider {
+            override val main: CoroutineContext = testDispatcher
+            override val io: CoroutineContext = testDispatcher
+            override val default: CoroutineContext = testDispatcher
+        }
+        
+        repository = ChatRepositoryImpl(dao, workManager, context, testContextProvider)
         
         val tempCacheDir = File(System.getProperty("java.io.tmpdir"), "test_cache").apply { mkdirs() }
         every { context.cacheDir } returns tempCacheDir

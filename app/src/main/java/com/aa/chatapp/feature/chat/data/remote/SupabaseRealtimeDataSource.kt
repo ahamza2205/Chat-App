@@ -7,6 +7,7 @@ import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.postgresChangeFlow
 import io.github.jan.supabase.realtime.realtime
+import com.aa.chatapp.core.coroutines.CoroutineContextProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.mapNotNull
@@ -19,9 +20,10 @@ import io.github.jan.supabase.postgrest.postgrest
 
 class SupabaseRealtimeDataSource @Inject constructor(
     private val dao: MessageDao,
+    private val contextProvider: CoroutineContextProvider,
 ) {
     fun start(scope: CoroutineScope) {
-        scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+        scope.launch(contextProvider.io) {
             runCatching {
                 val remotes = supabaseClient.postgrest["messages"].select().decodeList<RemoteMessage>()
                 remotes.forEach { remote ->

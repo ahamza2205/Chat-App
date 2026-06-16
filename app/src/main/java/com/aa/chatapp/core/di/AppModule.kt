@@ -5,6 +5,8 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.work.WorkManager
+import com.aa.chatapp.core.coroutines.CoroutineContextProvider
+import com.aa.chatapp.core.coroutines.DefaultCoroutineContextProvider
 import com.aa.chatapp.feature.chat.data.repository.ChatRepositoryImpl
 import com.aa.chatapp.feature.chat.domain.repository.ChatRepository
 import dagger.Binds
@@ -24,6 +26,10 @@ abstract class AppModule {
     @Binds
     @Singleton
     abstract fun bindChatRepository(impl: ChatRepositoryImpl): ChatRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCoroutineContextProvider(impl: DefaultCoroutineContextProvider): CoroutineContextProvider
 
     companion object {
 

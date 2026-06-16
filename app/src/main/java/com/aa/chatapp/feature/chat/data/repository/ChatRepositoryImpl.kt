@@ -17,10 +17,10 @@ import com.aa.chatapp.feature.chat.data.worker.SendMessageWorker
 import com.aa.chatapp.feature.chat.domain.model.Message
 import com.aa.chatapp.feature.chat.domain.model.MessageStatus
 import com.aa.chatapp.feature.chat.domain.repository.ChatRepository
+import com.aa.chatapp.core.coroutines.CoroutineContextProvider
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.storage.storage
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -33,13 +33,14 @@ class ChatRepositoryImpl @Inject constructor(
     private val dao: MessageDao,
     private val workManager: WorkManager,
     @ApplicationContext private val context: Context,
+    private val contextProvider: CoroutineContextProvider,
 ) : ChatRepository {
 
     override fun observeMessages(): Flow<List<Message>> =
         dao.observeMessages().map { entities -> entities.map { it.toDomain() } }
 
     override suspend fun insertPendingMessage(message: Message) {
-        val cachedAttachments = withContext(Dispatchers.IO) {
+        val cachedAttachments = withContext(contextProvider.io) {
             message.attachments.map { attachment ->
                 val localUri = attachment.localUri
                 if (localUri != null && localUri.startsWith("content://")) {
@@ -91,7 +92,7 @@ class ChatRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteForEveryone(messageId: String) {
-        withContext(Dispatchers.IO) {
+        withContext(contextProvider.io) {
             supabaseClient.postgrest["messages"].update({
                 set("is_deleted_for_everyone", true)
                 set("text", null as String?)
@@ -102,7 +103,7 @@ class ChatRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateUserProfile(userId: String, name: String, avatarUrl: String?) {
-        withContext(Dispatchers.IO) {
+        withContext(contextProvider.io) {
             runCatching {
                 supabaseClient.postgrest["messages"].update({
                     set("sender_name", name)
@@ -114,7 +115,7 @@ class ChatRepositoryImpl @Inject constructor(
     }
 
     override suspend fun uploadAvatar(userId: String, imageBytes: ByteArray): String {
-        return withContext(Dispatchers.IO) {
+        return withContext(contextProvider.io) {
             val remotePath = "avatars/$userId.jpg"
             val bucket = supabaseClient.storage["attachments"]
             bucket.upload(remotePath, imageBytes) { upsert = true }
