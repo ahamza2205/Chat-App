@@ -10,12 +10,18 @@ import com.aa.chatapp.feature.chat.data.remote.SupabaseRealtimeDataSource
 import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.HiltAndroidApp
 import io.github.jan.supabase.postgrest.from
+import android.util.Log
+import com.google.android.gms.tasks.Task
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.Serializable
 import javax.inject.Inject
 
@@ -27,8 +33,12 @@ class ChatApplication : Application(), Configuration.Provider {
     @Inject lateinit var userPrefs: UserPreferencesDataSource
     @Inject lateinit var contextProvider: CoroutineContextProvider
 
+    private val exceptionHandler = CoroutineExceptionHandler { _, exception ->
+        Log.e("ChatApplication", "Unhandled coroutine exception in appScope", exception)
+    }
+
     private val appScope by lazy {
-        CoroutineScope(SupervisorJob() + contextProvider.io)
+        CoroutineScope(SupervisorJob() + contextProvider.io + exceptionHandler)
     }
 
     override val workManagerConfiguration: Configuration
@@ -48,8 +58,13 @@ class ChatApplication : Application(), Configuration.Provider {
     }
 
     private fun fetchAndStoreFcmToken() {
-        FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
-            appScope.launch { userPrefs.saveFcmToken(token) }
+        appScope.launch {
+            runCatching {
+                val token = FirebaseMessaging.getInstance().token.await()
+                userPrefs.saveFcmToken(token)
+            }.onFailure { exception ->
+                Log.e("ChatApplication", "Failed to fetch and store FCM token", exception)
+            }
         }
     }
 
@@ -65,5 +80,16 @@ class ChatApplication : Application(), Configuration.Provider {
                 }
             }
             .launchIn(appScope)
+    }
+
+    private suspend fun <T> Task<T>.await(): T = suspendCancellableCoroutine { continuation ->
+        addOnCompleteListener { task ->
+            val exception = task.exception
+            if (task.isSuccessful) {
+                continuation.resume(task.result)
+            } else {
+                continuation.resumeWithException(exception ?: Exception("Task failed"))
+            }
+        }
     }
 }

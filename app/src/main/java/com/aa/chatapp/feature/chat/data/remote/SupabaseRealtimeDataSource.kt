@@ -1,5 +1,6 @@
 package com.aa.chatapp.feature.chat.data.remote
 
+import android.util.Log
 import com.aa.chatapp.core.network.supabaseClient
 import com.aa.chatapp.feature.chat.data.local.dao.MessageDao
 import io.github.jan.supabase.realtime.HasRecord
@@ -71,8 +72,12 @@ class SupabaseRealtimeDataSource @Inject constructor(
         }.launchIn(scope)
 
         scope.launch {
-            supabaseClient.realtime.connect()
-            channel.subscribe()
+            runCatching {
+                supabaseClient.realtime.connect()
+                channel.subscribe()
+            }.onFailure { exception ->
+                Log.e("SupabaseRealtime", "Failed to connect/subscribe to realtime database", exception)
+            }
         }
     }
 }

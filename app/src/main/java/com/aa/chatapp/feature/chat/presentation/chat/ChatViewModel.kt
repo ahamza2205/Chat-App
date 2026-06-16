@@ -82,8 +82,20 @@ class ChatViewModel @Inject constructor(
             is ChatIntent.OnRetryMessage -> retryMessage(intent.messageId)
             is ChatIntent.OnReplyToMessage -> _state.update { it.copy(replyingTo = intent.reply) }
             ChatIntent.OnClearReply -> _state.update { it.copy(replyingTo = null) }
-            is ChatIntent.OnDeleteForMe -> viewModelScope.launch { deleteForMe(intent.messageId) }
-            is ChatIntent.OnDeleteForEveryone -> viewModelScope.launch { deleteForEveryone(intent.messageId) }
+            is ChatIntent.OnDeleteForMe -> viewModelScope.launch {
+                try {
+                    deleteForMe(intent.messageId)
+                } catch (e: Exception) {
+                    _effects.trySend(ChatEffect.ShowSnackbar("Failed to delete message locally"))
+                }
+            }
+            is ChatIntent.OnDeleteForEveryone -> viewModelScope.launch {
+                try {
+                    deleteForEveryone(intent.messageId)
+                } catch (e: Exception) {
+                    _effects.trySend(ChatEffect.ShowSnackbar("Failed to delete message for everyone"))
+                }
+            }
         }
     }
 
@@ -108,25 +120,35 @@ class ChatViewModel @Inject constructor(
             return
         }
         viewModelScope.launch {
-            val userId = userPrefs.userId.first() ?: return@launch
-            val message = Message(
-                id = UUID.randomUUID().toString(),
-                senderId = userId,
-                senderName = userPrefs.userName.first() ?: "Unknown",
-                senderAvatarUrl = userPrefs.avatarUrl.first(),
-                text = current.inputText.trim().takeIf { it.isNotBlank() },
-                attachments = current.selectedAttachments,
-                status = MessageStatus.SENDING,
-                createdAt = System.currentTimeMillis(),
-                replyPreview = current.replyingTo,
-            )
-            insertPendingMessage(message)
-            _state.update { it.copy(inputText = "", selectedAttachments = emptyList(), replyingTo = null) }
+            try {
+                val userId = userPrefs.userId.first() ?: return@launch
+                val message = Message(
+                    id = UUID.randomUUID().toString(),
+                    senderId = userId,
+                    senderName = userPrefs.userName.first() ?: "Unknown",
+                    senderAvatarUrl = userPrefs.avatarUrl.first(),
+                    text = current.inputText.trim().takeIf { it.isNotBlank() },
+                    attachments = current.selectedAttachments,
+                    status = MessageStatus.SENDING,
+                    createdAt = System.currentTimeMillis(),
+                    replyPreview = current.replyingTo,
+                )
+                insertPendingMessage(message)
+                _state.update { it.copy(inputText = "", selectedAttachments = emptyList(), replyingTo = null) }
+            } catch (e: Exception) {
+                _effects.trySend(ChatEffect.ShowSnackbar("Failed to send message"))
+            }
         }
     }
 
     private fun retryMessage(messageId: String) {
-        viewModelScope.launch { retryMessageUseCase(messageId) }
+        viewModelScope.launch {
+            try {
+                retryMessageUseCase(messageId)
+            } catch (e: Exception) {
+                _effects.trySend(ChatEffect.ShowSnackbar("Failed to retry sending message"))
+            }
+        }
     }
 }
 
