@@ -36,6 +36,7 @@ class ChatRepositoryImpl @Inject constructor(
     private val contextProvider: CoroutineContextProvider,
 ) : ChatRepository {
 
+    
     override fun observeMessages(): Flow<List<Message>> =
         dao.observeMessages().map { entities -> entities.map { it.toDomain() } }
 

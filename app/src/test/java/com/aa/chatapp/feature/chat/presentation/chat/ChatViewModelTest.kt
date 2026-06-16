@@ -27,6 +27,7 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatViewModelTest {
 
+    
     private lateinit var observeMessages: ObserveMessagesUseCase
     private lateinit var insertPendingMessage: InsertPendingMessageUseCase
     private lateinit var retryMessage: RetryMessageUseCase
