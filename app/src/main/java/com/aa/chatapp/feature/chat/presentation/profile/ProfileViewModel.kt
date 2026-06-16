@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 
 data class ProfileState(
@@ -55,6 +56,7 @@ class ProfileViewModel @Inject constructor(
                 chatRepository.updateUserProfile(userId, _state.value.name, remoteUrl)
                 _state.update { it.copy(avatarUrl = remoteUrl, isSaving = false) }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _state.update { it.copy(isSaving = false, error = "Avatar upload failed") }
             }
         }
@@ -68,13 +70,18 @@ class ProfileViewModel @Inject constructor(
         }
         viewModelScope.launch {
             _state.update { it.copy(isSaving = true, error = null) }
-            userPrefs.saveUserName(name)
-            val userId = userPrefs.userId.first()
-            if (userId != null) {
-                val avatarUrl = userPrefs.avatarUrl.first()
-                chatRepository.updateUserProfile(userId, name, avatarUrl)
+            try {
+                userPrefs.saveUserName(name)
+                val userId = userPrefs.userId.first()
+                if (userId != null) {
+                    val avatarUrl = userPrefs.avatarUrl.first()
+                    chatRepository.updateUserProfile(userId, name, avatarUrl)
+                }
+                _state.update { it.copy(isSaving = false, savedSuccess = true) }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                _state.update { it.copy(isSaving = false, error = "Failed to update profile info") }
             }
-            _state.update { it.copy(isSaving = false, savedSuccess = true) }
         }
     }
 }

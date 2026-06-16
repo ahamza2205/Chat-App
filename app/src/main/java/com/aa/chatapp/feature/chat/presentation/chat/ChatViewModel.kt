@@ -14,6 +14,7 @@ import com.aa.chatapp.feature.chat.domain.usecase.ObserveMessagesUseCase
 import com.aa.chatapp.feature.chat.domain.usecase.RetryMessageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -86,6 +87,7 @@ class ChatViewModel @Inject constructor(
                 try {
                     deleteForMe(intent.messageId)
                 } catch (e: Exception) {
+                    if (e is CancellationException) throw e
                     _effects.trySend(ChatEffect.ShowSnackbar("Failed to delete message locally"))
                 }
             }
@@ -93,6 +95,7 @@ class ChatViewModel @Inject constructor(
                 try {
                     deleteForEveryone(intent.messageId)
                 } catch (e: Exception) {
+                    if (e is CancellationException) throw e
                     _effects.trySend(ChatEffect.ShowSnackbar("Failed to delete message for everyone"))
                 }
             }
@@ -136,6 +139,7 @@ class ChatViewModel @Inject constructor(
                 insertPendingMessage(message)
                 _state.update { it.copy(inputText = "", selectedAttachments = emptyList(), replyingTo = null) }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _effects.trySend(ChatEffect.ShowSnackbar("Failed to send message"))
             }
         }
@@ -146,6 +150,7 @@ class ChatViewModel @Inject constructor(
             try {
                 retryMessageUseCase(messageId)
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _effects.trySend(ChatEffect.ShowSnackbar("Failed to retry sending message"))
             }
         }

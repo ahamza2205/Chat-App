@@ -16,6 +16,7 @@ import dagger.assisted.AssistedInject
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.withTimeout
 
 @HiltWorker
 class SendMessageWorker @AssistedInject constructor(
@@ -61,13 +62,17 @@ class SendMessageWorker @AssistedInject constructor(
                 }
                 val remotePath = "$messageId/${attachment.id}.$ext"
                 val bucket = supabaseClient.storage["attachments"]
-                bucket.upload(remotePath, bytes) { upsert = true }
+                withTimeout(15_000L) {
+                    bucket.upload(remotePath, bytes) { upsert = true }
+                }
                 val remoteUrl = bucket.publicUrl(remotePath)
                 attachment.copy(localUri = null, remoteUrl = remoteUrl)
             }
 
             val readyEntity = entity.copy(attachments = uploaded)
-            supabaseClient.postgrest["messages"].insert(readyEntity.toRemote())
+            withTimeout(10_000L) {
+                supabaseClient.postgrest["messages"].insert(readyEntity.toRemote())
+            }
             dao.updateMessageStatus(messageId, MessageStatus.SENT.name, null)
             Result.success()
         } catch (e: CancellationException) {
