@@ -12,21 +12,21 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatViewModelTest {
 
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
     
     private lateinit var observeMessages: ObserveMessagesUseCase
     private lateinit var insertPendingMessage: InsertPendingMessageUseCase
@@ -38,8 +38,6 @@ class ChatViewModelTest {
 
     @Before
     fun setup() {
-        Dispatchers.setMain(UnconfinedTestDispatcher())
-        
         observeMessages = mockk()
         insertPendingMessage = mockk()
         retryMessage = mockk()
@@ -53,11 +51,6 @@ class ChatViewModelTest {
         every { userPrefs.avatarUrl } returns flowOf(null)
 
         viewModel = ChatViewModel(observeMessages, insertPendingMessage, retryMessage, deleteForMe, deleteForEveryone, userPrefs)
-    }
-
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
     }
 
     @Test
@@ -94,5 +87,26 @@ class ChatViewModelTest {
         viewModel.onIntent(ChatIntent.OnRetryMessage("msg_123"))
 
         coVerify { retryMessage.invoke("msg_123") }
+    }
+
+    @Test
+    fun `demonstrate virtual time control with advanceTimeBy`() = runTest {
+        val testScheduler = testScheduler
+        var isExecutionComplete = false
+
+        launch {
+            kotlinx.coroutines.delay(1000L)
+            isExecutionComplete = true
+        }
+
+        // Immediately after launching, the delay has not completed yet
+        assertEquals(false, isExecutionComplete)
+
+        // Advance time by 1000ms virtual time
+        testScheduler.advanceTimeBy(1000L)
+        testScheduler.runCurrent() // Execute the tasks scheduled at 1000ms
+
+        // Now the delayed task should have completed
+        assertEquals(true, isExecutionComplete)
     }
 }
