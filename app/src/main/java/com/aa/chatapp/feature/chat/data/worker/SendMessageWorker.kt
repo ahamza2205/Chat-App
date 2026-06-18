@@ -13,9 +13,11 @@ import com.aa.chatapp.feature.chat.data.remote.toRemote
 import com.aa.chatapp.feature.chat.domain.model.MessageStatus
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import com.aa.chatapp.core.coroutines.CoroutineContextProvider
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 
 @HiltWorker
@@ -24,13 +26,14 @@ class SendMessageWorker @AssistedInject constructor(
     @Assisted params: WorkerParameters,
     private val dao: MessageDao,
     private val notificationHelper: ChatNotificationHelper,
+    private val contextProvider: CoroutineContextProvider,
 ) : CoroutineWorker(context, params) {
 
-    override suspend fun doWork(): Result {
+    override suspend fun doWork(): Result = withContext(contextProvider.io) {
         val messageId = inputData.getString(WorkConstants.KEY_MESSAGE_ID)
-            ?: return Result.failure()
+            ?: return@withContext Result.failure()
 
-        val entity = dao.getMessageById(messageId) ?: return Result.failure()
+        val entity = dao.getMessageById(messageId) ?: return@withContext Result.failure()
 
         val pendingAttachments = entity.attachments.filter { it.localUri != null }
 
@@ -40,7 +43,7 @@ class SendMessageWorker @AssistedInject constructor(
             setForeground(notificationHelper.createForegroundInfo(messageId))
         }
 
-        return try {
+        try {
             val uploaded = entity.attachments.mapIndexed { index, attachment ->
                 val localUri = attachment.localUri ?: return@mapIndexed attachment
 

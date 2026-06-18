@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.work.Data
 import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
+import com.aa.chatapp.core.coroutines.CoroutineContextProvider
 import com.aa.chatapp.core.notifications.ChatNotificationHelper
 import com.aa.chatapp.core.work.WorkConstants
 import com.aa.chatapp.feature.chat.data.local.dao.MessageDao
@@ -16,17 +17,22 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.spyk
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
+import kotlin.coroutines.CoroutineContext
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class SendMessageWorkerTest {
 
     private lateinit var context: Context
     private lateinit var params: WorkerParameters
     private lateinit var dao: MessageDao
     private lateinit var notificationHelper: ChatNotificationHelper
+    private lateinit var contextProvider: CoroutineContextProvider
     private lateinit var worker: SendMessageWorker
 
     @Before
@@ -35,6 +41,13 @@ class SendMessageWorkerTest {
         params = mockk(relaxed = true)
         dao = mockk(relaxed = true)
         notificationHelper = mockk(relaxed = true)
+        
+        val testDispatcher = UnconfinedTestDispatcher()
+        contextProvider = object : CoroutineContextProvider {
+            override val main: CoroutineContext = testDispatcher
+            override val io: CoroutineContext = testDispatcher
+            override val default: CoroutineContext = testDispatcher
+        }
     }
 
     private fun buildWorker(messageId: String?, runAttemptCount: Int = 0): SendMessageWorker {
@@ -45,7 +58,7 @@ class SendMessageWorkerTest {
         every { params.inputData } returns dataBuilder.build()
         every { params.runAttemptCount } returns runAttemptCount
         
-        val worker = spyk(SendMessageWorker(context, params, dao, notificationHelper))
+        val worker = spyk(SendMessageWorker(context, params, dao, notificationHelper, contextProvider))
         coEvery { worker.setForeground(any()) } just Runs
         return worker
     }
